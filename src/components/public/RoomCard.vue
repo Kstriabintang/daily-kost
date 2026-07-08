@@ -31,8 +31,8 @@ defineProps({ room: { type: Object, required: true }, query: { type: Object, def
       </div>
       <div class="mt-4 flex items-end justify-between border-t border-brand-700/5 pt-3">
         <div>
-          <span class="font-display text-xl font-bold text-brand-700">{{ rupiah(room.dailyRate) }}</span>
-          <span class="text-xs text-brand-400">/malam</span>
+          <span class="text-[11px] text-brand-400">mulai</span>
+          <p><span class="font-display text-xl font-bold text-brand-700">{{ rupiah(room.startingRate ?? room.rates?.['3j'] ?? room.dailyRate) }}</span><span class="text-xs text-brand-400">/3 jam</span></p>
         </div>
         <span class="flex items-center gap-1 text-sm font-semibold text-brand-600 transition group-hover:gap-2">Pesan <Icon name="arrowRight" :size="15" /></span>
       </div>

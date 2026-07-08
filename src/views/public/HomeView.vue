@@ -31,15 +31,15 @@ const areaCards = computed(() =>
 )
 
 const perks = [
-  { icon: 'checkCircle', title: 'Tanpa Login', desc: 'Pesan langsung sebagai tamu. Isi data, konfirmasi, selesai — semudah itu.' },
-  { icon: 'money', title: 'Harga Transparan', desc: 'Tarif per malam jelas tanpa biaya tersembunyi. Bayar di tempat atau transfer.' },
-  { icon: 'sparkles', title: 'Kamar Premium', desc: 'Semua kamar terverifikasi, bersih, dan dilengkapi fasilitas modern.' },
-  { icon: 'clock', title: 'Konfirmasi Instan', desc: 'Dapatkan kode booking seketika dan langsung datang untuk check-in.' },
+  { icon: 'clock', title: 'Sewa Fleksibel', desc: 'Bayar sesuai kebutuhan — 3 jam, 6 jam, 12 jam, atau harian. Tanpa kontrak bulanan.' },
+  { icon: 'sparkles', title: 'Fasilitas Lengkap', desc: 'AC, Smart TV + Netflix, WiFi cepat, dan kamar mandi dalam di setiap kamar.' },
+  { icon: 'checkCircle', title: 'Bersih & Nyaman', desc: 'Kamar disterilisasi tiap tamu — wangi, rapi, dan siap huni 24 jam.' },
+  { icon: 'money', title: 'Tanpa Login', desc: 'Pesan sebagai tamu, harga transparan, bayar di tempat atau transfer.' },
 ]
 const steps = [
-  { n: '1', icon: 'search', title: 'Cari & Pilih', desc: 'Tentukan lokasi, tanggal, dan pilih kamar impianmu.' },
+  { n: '1', icon: 'search', title: 'Pilih Durasi', desc: 'Tentukan lokasi, jam masuk, dan durasi — 3 jam hingga harian.' },
   { n: '2', icon: 'edit', title: 'Isi Data Tamu', desc: 'Cukup nama & nomor HP. Tanpa akun, tanpa ribet.' },
-  { n: '3', icon: 'key', title: 'Check-in', desc: 'Terima kode booking, datang, dan nikmati kamarmu.' },
+  { n: '3', icon: 'key', title: 'Check-in 24 Jam', desc: 'Terima kode booking, datang kapan saja, dan langsung istirahat.' },
 ]
 </script>
 
@@ -54,12 +54,12 @@ const steps = [
 
       <div class="relative mx-auto max-w-6xl px-5">
         <div class="mx-auto max-w-3xl text-center">
-          <span class="chip animate-rise bg-white/10 text-gold-300 ring-1 ring-white/15 backdrop-blur"><Icon name="sparkles" :size="14" /> #1 Sewa Kos Harian di Pontianak</span>
+          <span class="chip animate-rise bg-white/10 text-gold-300 ring-1 ring-white/15 backdrop-blur"><Icon name="clock" :size="14" /> Kos Singgah & Transit · Sewa Per Jam di Pontianak</span>
           <h1 class="animate-rise mt-5 font-display text-4xl leading-[1.1] font-bold sm:text-5xl lg:text-6xl" style="animation-delay: 80ms">
-            Temukan kamar kos<br /><span class="text-gold-400">terbaikmu</span> di Pontianak
+            Butuh tempat <span class="text-gold-400">singgah</span><br />sebentar di Pontianak?
           </h1>
           <p class="animate-rise mx-auto mt-5 max-w-xl text-lg text-brand-100" style="animation-delay: 160ms">
-            Ratusan kamar premium siap huni. Pesan langsung tanpa login — cepat, aman, dan transparan.
+            Sewa kamar per 3, 6, 12 jam, atau harian. AC, Smart TV + Netflix, kamar mandi dalam, bersih & nyaman — pesan tanpa login.
           </p>
         </div>
 
@@ -86,7 +86,7 @@ const steps = [
       <div class="mb-8 flex items-end justify-between">
         <div v-reveal>
           <span class="chip bg-brand-50 text-brand-600"><Icon name="sparkles" :size="14" /> Pilihan Terpopuler</span>
-          <h2 class="mt-3 font-display text-3xl font-bold text-brand-800">Kamar favorit tamu</h2>
+          <h2 class="mt-3 font-display text-3xl font-bold text-brand-800">Kamar singgah favorit</h2>
         </div>
         <RouterLink to="/cari" class="hidden items-center gap-1 text-sm font-semibold text-brand-600 hover:gap-2 sm:flex">Lihat semua <Icon name="arrowRight" :size="16" /></RouterLink>
       </div>
@@ -105,8 +105,8 @@ const steps = [
       <div class="mx-auto max-w-6xl px-5">
         <div v-reveal class="mx-auto mb-9 max-w-xl text-center">
           <span class="chip bg-brand-50 text-brand-600"><Icon name="mapPin" :size="14" /> Jelajahi Lokasi</span>
-          <h2 class="mt-3 font-display text-3xl font-bold text-brand-800">Kos di seluruh Pontianak</h2>
-          <p class="mt-2 text-brand-500">Pilih area yang paling dekat dengan aktivitasmu.</p>
+          <h2 class="mt-3 font-display text-3xl font-bold text-brand-800">Kos singgah di seluruh Pontianak</h2>
+          <p class="mt-2 text-brand-500">Pilih area terdekat — semua kamar campur, siap huni 24 jam.</p>
         </div>
         <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <RouterLink v-for="(a, i) in areaCards" :key="a.name" :to="`/cari?area=${encodeURIComponent(a.name)}`"
@@ -164,8 +164,8 @@ const steps = [
       <div v-reveal class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 to-brand-700 px-8 py-14 text-center text-white animate-gradient">
         <div class="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-gold-500/20 blur-3xl" />
         <div class="relative">
-          <h2 class="font-display text-3xl font-bold sm:text-4xl">Siap pindah ke kos impianmu?</h2>
-          <p class="mx-auto mt-3 max-w-lg text-brand-100">Temukan & pesan kamar sekarang. Tanpa login, konfirmasi instan.</p>
+          <h2 class="font-display text-3xl font-bold sm:text-4xl">Butuh tempat istirahat sekarang?</h2>
+          <p class="mx-auto mt-3 max-w-lg text-brand-100">Pesan kamar singgah dalam hitungan menit. Tanpa login, konfirmasi instan, check-in 24 jam.</p>
           <RouterLink to="/cari" class="btn-gold mt-7 px-8 py-3.5 text-base"><Icon name="search" :size="18" /> Cari Kamar Sekarang</RouterLink>
         </div>
       </div>

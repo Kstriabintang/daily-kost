@@ -16,13 +16,14 @@ const sources = computed(() => store.sourceDistribution)
 const avgStay = computed(() => {
   const bs = store.scopedBookings
   if (!bs.length) return 0
-  return (bs.reduce((s, b) => s + store.bookingNights(b), 0) / bs.length).toFixed(1)
+  return Math.round(bs.reduce((s, b) => s + store.bookingDuration(b).hours, 0) / bs.length)
 })
 const avgRate = computed(() => {
   const rs = store.scopedRooms
   if (!rs.length) return 0
-  return Math.round(rs.reduce((s, r) => s + r.dailyRate, 0) / rs.length)
+  return Math.round(rs.reduce((s, r) => s + (r.rates?.['1h'] ?? r.dailyRate), 0) / rs.length)
 })
+const durasi = computed(() => store.durationDistribution)
 
 const topRooms = computed(() => {
   const rev = {}
@@ -47,8 +48,8 @@ const maxTop = computed(() => Math.max(1, ...topRooms.value.map((r) => r.amount)
 
     <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <StatCard label="Okupansi Rata-rata" :value="`${store.occupancyRate}%`" sub="seluruh cabang" icon="chart" tone="brand" />
-      <StatCard label="Rata-rata Menginap" :value="`${avgStay} malam`" sub="per booking" icon="clock" tone="gold" />
-      <StatCard label="Tarif Rata-rata" :value="rupiahShort(avgRate)" sub="per malam" icon="money" tone="emerald" />
+      <StatCard label="Rata-rata Durasi" :value="`${avgStay} jam`" sub="per booking" icon="clock" tone="gold" />
+      <StatCard label="Tarif Rata-rata" :value="rupiahShort(avgRate)" sub="per hari" icon="money" tone="emerald" />
       <StatCard label="Total Booking" :value="store.scopedBookings.length" sub="sepanjang waktu" icon="calendar" tone="slate" />
     </div>
 
@@ -59,10 +60,16 @@ const maxTop = computed(() => Math.max(1, ...topRooms.value.map((r) => r.amount)
         <BarChart :data="occByProp" :format="(v) => v + '%'" :height="200" />
       </div>
       <div class="card p-5">
-        <h2 class="font-display text-lg font-bold text-brand-800">Sumber Booking</h2>
-        <p class="mb-3 text-sm text-brand-400">Kanal akuisisi tamu</p>
-        <DonutChart :data="sources" :center-value="store.scopedBookings.length" center-label="Booking" :size="150" :thickness="20" />
+        <h2 class="font-display text-lg font-bold text-brand-800">Durasi Sewa Populer</h2>
+        <p class="mb-3 text-sm text-brand-400">Paket yang paling sering dipesan</p>
+        <DonutChart :data="durasi" :center-value="store.scopedBookings.length" center-label="Booking" :size="150" :thickness="20" />
       </div>
+    </div>
+
+    <div class="mt-4 card p-5">
+      <h2 class="font-display text-lg font-bold text-brand-800">Sumber Booking</h2>
+      <p class="mb-4 text-sm text-brand-400">Kanal akuisisi tamu</p>
+      <BarChart :data="sources" :format="(v) => v" :height="150" />
     </div>
 
     <div class="mt-4 card p-5">

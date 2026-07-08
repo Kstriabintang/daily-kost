@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useKostStore } from '../stores/kost'
-import { rupiah, rupiahShort, tanggal, relatif, initials } from '../utils/format'
+import { rupiah, rupiahShort, tanggal, tanggalWaktu, waktu } from '../utils/format'
 import PageHeader from '../components/PageHeader.vue'
 import StatCard from '../components/StatCard.vue'
 import Icon from '../components/Icon.vue'
@@ -86,7 +86,7 @@ const recent = computed(() =>
             <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-xs font-bold text-brand-600">{{ store.roomById(b.roomId)?.number }}</span>
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-medium text-brand-800">{{ store.customerById(b.customerId)?.name }}</p>
-              <p class="text-xs text-brand-400">{{ relatif(b.checkOut) }}</p>
+              <p class="text-xs text-brand-400">selesai {{ tanggalWaktu(store.bookingCheckOutAt(b)) }}</p>
             </div>
             <span class="chip" :class="b.paid ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-500'">{{ b.paid ? 'Lunas' : 'Belum' }}</span>
           </li>

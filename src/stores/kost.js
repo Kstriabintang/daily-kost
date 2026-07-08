@@ -2,14 +2,12 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { dbAll, dbUpsert, dbBulk, dbDelete, dbDeleteBy, dbClear } from '../lib/supabase'
 
+const STORAGE_KEY = 'daily-kost-v3'
 const TABLES = ['properties', 'rooms', 'customers', 'bookings', 'payments', 'expenses', 'broadcasts', 'templates']
-
-const STORAGE_KEY = 'daily-kost-v2'
 
 // ── Utils ───────────────────────────────────────────────────────────────────
 const uid = (p = 'x') => p + '_' + Math.random().toString(36).slice(2, 9)
 
-// Deterministic PRNG so seed data is stable across reloads
 function mulberry32(seed) {
   return function () {
     seed |= 0
@@ -19,24 +17,44 @@ function mulberry32(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296
   }
 }
-const rng = mulberry32(20260708)
+const rng = mulberry32(20260709)
 const pick = (arr) => arr[Math.floor(rng() * arr.length)]
 const randInt = (min, max) => min + Math.floor(rng() * (max - min + 1))
+const p2 = (n) => String(n).padStart(2, '0')
 
-export function daysBetween(a, b) {
-  const d1 = new Date(a + 'T00:00:00Z')
-  const d2 = new Date(b + 'T00:00:00Z')
-  return Math.max(1, Math.round((d2 - d1) / 86400000))
-}
+// ── Paket durasi (kos singgah / transit) ─────────────────────────────────────
+export const DURATIONS = [
+  { key: '3j', label: '3 Jam', short: '3 jam', hours: 3 },
+  { key: '6j', label: '6 Jam', short: '6 jam', hours: 6 },
+  { key: '12j', label: '12 Jam', short: '12 jam', hours: 12 },
+  { key: '1h', label: '1 Hari', short: '24 jam', hours: 24 },
+  { key: '1mg', label: '1 Minggu', short: '7 hari', hours: 168 },
+]
+export const durationByKey = (k) => DURATIONS.find((d) => d.key === k) || DURATIONS[3]
+
+// ── Tanggal & waktu ──────────────────────────────────────────────────────────
 export function todayStr() {
-  // local calendar date (Y-M-D), timezone-safe
   const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`
+}
+export function nowStr() {
+  const d = new Date()
+  return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}`
 }
 export function addDays(dateStr, n) {
   const d = new Date((dateStr || todayStr()) + 'T00:00:00Z')
   d.setUTCDate(d.getUTCDate() + n)
   return d.toISOString().slice(0, 10)
+}
+export function addHours(dt, h) {
+  const d = new Date((dt || nowStr()).replace(' ', 'T'))
+  d.setHours(d.getHours() + h)
+  return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}`
+}
+export function daysBetween(a, b) {
+  const d1 = new Date(a + 'T00:00:00Z')
+  const d2 = new Date(b + 'T00:00:00Z')
+  return Math.max(1, Math.round((d2 - d1) / 86400000))
 }
 
 export const AREAS = [
@@ -51,18 +69,18 @@ export const AREAS = [
 // ── Seed ─────────────────────────────────────────────────────────────────────
 function seed() {
   const properties = [
-    { id: 'p1', name: 'Green Garden Residence', area: 'Pontianak Kota', address: 'Jl. Gajah Mada No. 88', phone: '0561-730001', type: 'Campur', hue: 158, rating: 4.9 },
-    { id: 'p2', name: 'Wisma Khatulistiwa', area: 'Pontianak Selatan', address: 'Jl. Ahmad Yani No. 21', phone: '0561-730002', type: 'Putra', hue: 168, rating: 4.7 },
-    { id: 'p3', name: 'Mutiara Kapuas Living', area: 'Pontianak Tenggara', address: 'Jl. Imam Bonjol No. 45', phone: '0561-730003', type: 'Putri', hue: 148, rating: 4.8 },
-    { id: 'p4', name: 'Griya Anggrek Signature', area: 'Pontianak Barat', address: 'Jl. Komyos Sudarso No. 12', phone: '0561-730004', type: 'Campur', hue: 176, rating: 4.6 },
-    { id: 'p5', name: 'Katulistiwa Sky House', area: 'Pontianak Utara', address: 'Jl. Khatulistiwa No. 7', phone: '0561-730005', type: 'Putra', hue: 138, rating: 4.5 },
+    { id: 'p1', name: 'Green Garden Transit', area: 'Pontianak Kota', address: 'Jl. Gajah Mada No. 88', phone: '0561-730001', type: 'Campur', hue: 158, rating: 4.9 },
+    { id: 'p2', name: 'Khatulistiwa Stay', area: 'Pontianak Selatan', address: 'Jl. Ahmad Yani No. 21', phone: '0561-730002', type: 'Campur', hue: 168, rating: 4.7 },
+    { id: 'p3', name: 'Mutiara Kapuas Rooms', area: 'Pontianak Tenggara', address: 'Jl. Imam Bonjol No. 45', phone: '0561-730003', type: 'Campur', hue: 148, rating: 4.8 },
+    { id: 'p4', name: 'Anggrek Signature Stay', area: 'Pontianak Barat', address: 'Jl. Komyos Sudarso No. 12', phone: '0561-730004', type: 'Campur', hue: 176, rating: 4.6 },
+    { id: 'p5', name: 'Katulistiwa Sky Rooms', area: 'Pontianak Utara', address: 'Jl. Khatulistiwa No. 7', phone: '0561-730005', type: 'Campur', hue: 138, rating: 4.5 },
   ]
 
-  const roomTypes = [
-    { type: 'Standard', daily: 120000, monthly: 1500000, fac: ['Kipas', 'Kasur', 'WiFi', 'KM luar'] },
-    { type: 'Superior', daily: 165000, monthly: 2100000, fac: ['AC', 'Kasur', 'WiFi', 'KM dalam', 'Meja kerja'] },
-    { type: 'Deluxe', daily: 235000, monthly: 3000000, fac: ['AC', 'Spring bed', 'WiFi', 'KM dalam', 'TV', 'Water heater'] },
-    { type: 'Suite', daily: 340000, monthly: 4500000, fac: ['AC', 'King bed', 'WiFi', 'KM dalam', 'Smart TV', 'Water heater', 'Balkon', 'Mini pantry'] },
+  const baseFac = ['AC', 'Smart TV', 'Netflix', 'WiFi cepat', 'KM dalam', 'Air panas']
+  const classes = [
+    { type: 'Standard', rates: { '3j': 40000, '6j': 60000, '12j': 90000, '1h': 130000, '1mg': 750000 }, fac: [...baseFac] },
+    { type: 'Deluxe', rates: { '3j': 55000, '6j': 80000, '12j': 120000, '1h': 175000, '1mg': 1000000 }, fac: [...baseFac, 'Kulkas mini', 'Meja kerja'] },
+    { type: 'Executive', rates: { '3j': 75000, '6j': 110000, '12j': 160000, '1h': 230000, '1mg': 1400000 }, fac: [...baseFac, 'Kulkas mini', 'Sofa', 'Bathtub', 'City view'] },
   ]
 
   const rooms = []
@@ -71,17 +89,17 @@ function seed() {
     for (let f = 1; f <= floors; f++) {
       const perFloor = randInt(3, 5)
       for (let n = 1; n <= perFloor; n++) {
-        const rt = roomTypes[Math.min(roomTypes.length - 1, f - 1 + (rng() > 0.6 ? 1 : 0))]
-        const num = `${f}${String(n).padStart(2, '0')}`
+        const cl = classes[Math.min(classes.length - 1, f - 1 + (rng() > 0.6 ? 1 : 0))]
+        const num = `${f}${p2(n)}`
         rooms.push({
           id: `r-${p.id}-${num}`,
           propertyId: p.id,
           number: num,
           floor: f,
-          type: rt.type,
-          dailyRate: rt.daily,
-          monthlyRate: rt.monthly,
-          facilities: rt.fac,
+          type: cl.type,
+          rates: { ...cl.rates },
+          dailyRate: cl.rates['1h'], // harga headline (1 hari) — kompatibilitas
+          facilities: [...cl.fac],
         })
       }
     }
@@ -98,106 +116,70 @@ function seed() {
       phone: `08${randInt(11, 89)}-${randInt(1000, 9999)}-${randInt(1000, 9999)}`,
       email: name.toLowerCase().replace(/\s+/g, '.') + '@mail.com',
       idNumber: `61710${randInt(10000000, 99999999)}`,
-      joinedAt: addDays(todayStr(), -randInt(20, 400)),
+      joinedAt: addDays(todayStr(), -randInt(5, 200)),
     })
   }
 
   const methods = ['Transfer', 'QRIS', 'Tunai']
-  const sources = ['Walk-in', 'WhatsApp', 'OTA', 'Referral']
+  const sources = ['Walk-in', 'WhatsApp', 'OTA', 'Website']
+  const durKeys = ['3j', '3j', '6j', '6j', '12j', '1h', '1h']
   const bookings = []
   const payments = []
+  const roomTotal = (room, key) => room.rates[key] ?? room.dailyRate
 
-  // Historical bookings (checked out) across the last ~60 days → revenue trend
-  for (let i = 0; i < 70; i++) {
+  // Riwayat (checkout) 45 hari terakhir → tren pendapatan
+  for (let i = 0; i < 90; i++) {
     const room = pick(rooms)
     const cust = pick(customers)
-    const start = addDays(todayStr(), -randInt(1, 60))
-    const nights = randInt(1, 8)
-    const end = addDays(start, nights)
-    const total = room.dailyRate * nights
-    const b = {
-      id: uid('b'),
-      roomId: room.id,
-      customerId: cust.id,
-      checkIn: start,
-      checkOut: end,
-      status: 'checkout',
-      paid: true,
-      source: pick(sources),
-    }
+    const day = addDays(todayStr(), -randInt(1, 45))
+    const hour = randInt(8, 22)
+    const dk = pick(durKeys)
+    const checkInAt = `${day}T${p2(hour)}:00`
+    const b = { id: uid('b'), roomId: room.id, customerId: cust.id, checkInAt, durationKey: dk, status: 'checkout', paid: true, source: pick(sources), guests: randInt(1, 2) }
     bookings.push(b)
-    payments.push({
-      id: uid('pay'),
-      bookingId: b.id,
-      amount: total,
-      method: pick(methods),
-      date: end,
-      status: 'success',
-    })
+    payments.push({ id: uid('pay'), bookingId: b.id, amount: roomTotal(room, dk), method: pick(methods), date: day, status: 'success' })
   }
 
-  // Active bookings — ensure a spread, but never double-book a room
+  // Aktif sekarang — beberapa kamar sedang terisi (window mencakup waktu ini)
+  const now = new Date()
   const usedRooms = new Set()
   let active = 0
   const shuffled = [...rooms].sort(() => rng() - 0.5)
   for (const room of shuffled) {
-    if (active >= 22) break
+    if (active >= 14) break
     if (usedRooms.has(room.id)) continue
-    if (rng() > 0.55) continue
+    if (rng() > 0.5) continue
     usedRooms.add(room.id)
     const cust = pick(customers)
-    const start = addDays(todayStr(), -randInt(0, 4))
-    const nights = randInt(2, 14)
-    const end = addDays(start, nights)
-    const paid = rng() > 0.4
-    const b = {
-      id: uid('b'),
-      roomId: room.id,
-      customerId: cust.id,
-      checkIn: start,
-      checkOut: end,
-      status: 'active',
-      paid,
-      source: pick(sources),
-    }
+    const dk = pick(durKeys)
+    const hrs = durationByKey(dk).hours
+    // mulai antara beberapa jam lalu s/d beberapa jam ke depan
+    const offset = randInt(-Math.min(hrs - 1, 6), 6)
+    const start = new Date(now.getTime() + offset * 3600000)
+    const checkInAt = `${start.getFullYear()}-${p2(start.getMonth() + 1)}-${p2(start.getDate())}T${p2(start.getHours())}:00`
+    const paid = rng() > 0.35
+    const b = { id: uid('b'), roomId: room.id, customerId: cust.id, checkInAt, durationKey: dk, status: 'active', paid, source: pick(sources), guests: randInt(1, 2) }
     bookings.push(b)
-    if (paid) {
-      payments.push({
-        id: uid('pay'),
-        bookingId: b.id,
-        amount: room.dailyRate * nights,
-        method: pick(methods),
-        date: start,
-        status: 'success',
-      })
-    }
+    if (paid) payments.push({ id: uid('pay'), bookingId: b.id, amount: roomTotal(room, dk), method: pick(methods), date: checkInAt.slice(0, 10), status: 'success' })
     active++
   }
 
-  const expCats = ['Listrik & Air', 'Kebersihan', 'Perawatan', 'Gaji Staff', 'Internet', 'Perlengkapan']
+  const expCats = ['Listrik & Air', 'Kebersihan', 'Perawatan', 'Gaji Staff', 'Internet & Netflix', 'Perlengkapan']
   const expenses = []
-  for (let i = 0; i < 34; i++) {
-    expenses.push({
-      id: uid('e'),
-      propertyId: pick(properties).id,
-      category: pick(expCats),
-      amount: randInt(8, 95) * 10000,
-      date: addDays(todayStr(), -randInt(0, 60)),
-      note: '',
-    })
+  for (let i = 0; i < 30; i++) {
+    expenses.push({ id: uid('e'), propertyId: pick(properties).id, category: pick(expCats), amount: randInt(8, 90) * 10000, date: addDays(todayStr(), -randInt(0, 45)), note: '' })
   }
 
   const broadcasts = [
-    { id: uid('bc'), title: 'Promo Sewa Bulanan Juli', message: 'Halo! Dapatkan diskon 15% untuk sewa bulanan di seluruh cabang Daily Kost Pontianak. Berlaku s/d akhir bulan 🌿', audience: 'Semua Penghuni', channel: 'Channel', date: addDays(todayStr(), -3), recipients: 128, status: 'terkirim' },
-    { id: uid('bc'), title: 'Reminder Pembayaran', message: 'Pengingat: tagihan sewa Anda jatuh tempo dalam 3 hari. Terima kasih 🙏', audience: 'Tunggakan', channel: 'Personal', date: addDays(todayStr(), -1), recipients: 14, status: 'terkirim' },
-    { id: uid('bc'), title: 'Info Maintenance Air', message: 'Pemberitahuan: perbaikan saluran air di cabang Pontianak Kota besok pukul 09.00-12.00.', audience: 'Green Garden Residence', channel: 'Channel', date: todayStr(), recipients: 24, status: 'terjadwal' },
+    { id: uid('bc'), title: 'Promo Transit 6 Jam', message: 'Halo! Nikmati promo kamar transit 6 jam mulai Rp60rb — AC, Smart TV, Netflix, kamar mandi dalam. Pesan sekarang di Daily Kost Pontianak 🌿', audience: 'Semua Penghuni', channel: 'Channel', date: addDays(todayStr(), -2), recipients: 128, status: 'terkirim' },
+    { id: uid('bc'), title: 'Reminder Check-out', message: 'Halo, waktu sewa kamar Anda akan berakhir dalam 30 menit. Perpanjang? Balas pesan ini 🙏', audience: 'Penghuni Aktif', channel: 'Personal', date: todayStr(), recipients: 9, status: 'terkirim' },
+    { id: uid('bc'), title: 'Kamar Bersih & Siap Huni', message: 'Semua kamar telah disterilisasi & dibersihkan. Check-in kapan saja, 24 jam!', audience: 'Semua Penghuni', channel: 'Channel', date: todayStr(), recipients: 128, status: 'terjadwal' },
   ]
-
   const templates = [
-    { id: uid('t'), name: 'Konfirmasi Booking', body: 'Halo {nama}, booking kamar {kamar} di {properti} dikonfirmasi. Check-in: {checkin}. Terima kasih telah memilih Daily Kost! 🌿' },
-    { id: uid('t'), name: 'Reminder Pembayaran', body: 'Halo {nama}, tagihan sewa sebesar {total} akan jatuh tempo pada {tanggal}. Silakan lakukan pembayaran. 🙏' },
-    { id: uid('t'), name: 'Ucapan Selamat Datang', body: 'Selamat datang di {properti}, {nama}! Semoga betah. Hubungi kami kapan saja bila butuh bantuan. 😊' },
-    { id: uid('t'), name: 'Reminder Check-out', body: 'Halo {nama}, jadwal check-out kamar {kamar} adalah {checkout}. Terima kasih! 🌿' },
+    { id: uid('t'), name: 'Konfirmasi Booking', body: 'Halo {nama}, booking kamar {kamar} di {properti} dikonfirmasi. Check-in: {checkin}, durasi {durasi}. Terima kasih! 🌿' },
+    { id: uid('t'), name: 'Reminder Check-out', body: 'Halo {nama}, sewa kamar {kamar} berakhir pukul {checkout}. Mau perpanjang? Balas pesan ini 🙏' },
+    { id: uid('t'), name: 'Ucapan Selamat Datang', body: 'Selamat datang di {properti}, {nama}! Nikmati AC, Smart TV & Netflix. Butuh bantuan? Hubungi kami 😊' },
+    { id: uid('t'), name: 'Promo Perpanjang', body: 'Halo {nama}, perpanjang sewa sekarang dan dapatkan harga spesial. Kamar {kamar} masih tersedia 🌿' },
   ]
 
   return { properties, rooms, customers, bookings, payments, expenses, broadcasts, templates }
@@ -235,27 +217,21 @@ export const useKostStore = defineStore('kost', () => {
   const templates = ref(initial.templates)
   const settings = ref(initial.settings ?? { ...defaultSettings })
 
-  // Active property filter (null = semua)
   const activePropertyId = ref(null)
   const ready = ref(false)
 
-  // Offline cache (localStorage) untuk paint instan + fallback
   watch(
     [properties, rooms, customers, bookings, payments, expenses, broadcasts, templates, settings],
     () => {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          properties: properties.value, rooms: rooms.value, customers: customers.value,
-          bookings: bookings.value, payments: payments.value, expenses: expenses.value,
-          broadcasts: broadcasts.value, templates: templates.value, settings: settings.value,
-        })
-      )
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        properties: properties.value, rooms: rooms.value, customers: customers.value,
+        bookings: bookings.value, payments: payments.value, expenses: expenses.value,
+        broadcasts: broadcasts.value, templates: templates.value, settings: settings.value,
+      }))
     },
     { deep: true }
   )
 
-  // ── Supabase: muat data (seed kalau DB kosong) ──
   async function init() {
     try {
       const props = await dbAll('properties')
@@ -276,12 +252,8 @@ export const useKostStore = defineStore('kost', () => {
           dbAll('rooms'), dbAll('customers'), dbAll('bookings'), dbAll('payments'),
           dbAll('expenses'), dbAll('broadcasts'), dbAll('templates'), dbAll('app_settings'),
         ])
-        properties.value = props
-        rooms.value = rms
-        customers.value = cus
-        bookings.value = bk
-        payments.value = pay
-        expenses.value = exp
+        properties.value = props; rooms.value = rms; customers.value = cus
+        bookings.value = bk; payments.value = pay; expenses.value = exp
         broadcasts.value = bc.sort((a, b) => (b.date || '').localeCompare(a.date || ''))
         templates.value = tpl
         if (st.length && st[0].data) settings.value = { ...defaultSettings, ...st[0].data }
@@ -293,7 +265,6 @@ export const useKostStore = defineStore('kost', () => {
     }
   }
 
-  // Sinkron pengaturan
   watch(settings, () => { if (ready.value) dbUpsert('app_settings', { id: 1, data: { ...settings.value } }) }, { deep: true })
 
   // ── Lookups ──
@@ -302,7 +273,7 @@ export const useKostStore = defineStore('kost', () => {
   const customerById = (id) => customers.value.find((c) => c.id === id) ?? null
   const propertyOfRoom = (roomId) => propertyById(roomById(roomId)?.propertyId)
 
-  // ── Scope helpers (respect active property filter) ──
+  // ── Scope ──
   const scopedRooms = computed(() =>
     activePropertyId.value ? rooms.value.filter((r) => r.propertyId === activePropertyId.value) : rooms.value
   )
@@ -313,28 +284,34 @@ export const useKostStore = defineStore('kost', () => {
   const scopedActiveBookings = computed(() => activeBookings.value.filter((b) => inScopeRoom(b.roomId)))
   const scopedBookings = computed(() => bookings.value.filter((b) => inScopeRoom(b.roomId)))
 
-  // ── Room status ──
-  const roomStatus = (roomId) =>
-    activeBookings.value.some((b) => b.roomId === roomId) ? 'terisi' : 'kosong'
-  const bookingForRoom = (roomId) =>
-    activeBookings.value.find((b) => b.roomId === roomId) ?? null
-  const availableRooms = computed(() => scopedRooms.value.filter((r) => roomStatus(r.id) === 'kosong'))
-
-  // ── Booking money ──
-  const bookingNights = (b) => daysBetween(b.checkIn, b.checkOut)
+  // ── Durasi & uang ──
+  const bookingDuration = (b) => durationByKey(b.durationKey)
+  const bookingCheckOutAt = (b) => addHours(b.checkInAt, bookingDuration(b).hours)
   const bookingTotal = (b) => {
     const room = roomById(b.roomId)
-    return room ? room.dailyRate * bookingNights(b) : 0
+    if (!room) return 0
+    return (room.rates && room.rates[b.durationKey]) ?? room.dailyRate ?? 0
   }
+  const roomStartingRate = (room) => (room.rates ? room.rates['3j'] : room.dailyRate)
 
-  // ── KPIs ──
+  // ── Status kamar (berbasis waktu sekarang) ──
+  const isOccupiedNow = (roomId) => {
+    const now = nowStr()
+    return activeBookings.value.some((b) => b.roomId === roomId && b.checkInAt <= now && now < bookingCheckOutAt(b))
+  }
+  const roomStatus = (roomId) => (isOccupiedNow(roomId) ? 'terisi' : 'kosong')
+  const bookingForRoom = (roomId) => {
+    const now = nowStr()
+    return activeBookings.value.find((b) => b.roomId === roomId && b.checkInAt <= now && now < bookingCheckOutAt(b)) ?? null
+  }
+  const availableRooms = computed(() => scopedRooms.value.filter((r) => roomStatus(r.id) === 'kosong'))
+
+  // ── KPI ──
   const occupancyRate = computed(() => {
     const total = scopedRooms.value.length
-    return total ? Math.round((scopedActiveBookings.value.length / total) * 100) : 0
+    const filled = scopedRooms.value.filter((r) => roomStatus(r.id) === 'terisi').length
+    return total ? Math.round((filled / total) * 100) : 0
   })
-  const revenueToday = computed(() =>
-    scopedActiveBookings.value.reduce((s, b) => s + (roomById(b.roomId)?.dailyRate ?? 0), 0)
-  )
   const outstanding = computed(() =>
     scopedActiveBookings.value.filter((b) => !b.paid).reduce((s, b) => s + bookingTotal(b), 0)
   )
@@ -349,9 +326,11 @@ export const useKostStore = defineStore('kost', () => {
     activePropertyId.value ? expenses.value.filter((e) => e.propertyId === activePropertyId.value) : expenses.value
   )
 
-  const monthKey = (d) => d.slice(0, 7)
+  const monthKey = (d) => (d || '').slice(0, 7)
   const thisMonth = computed(() => todayStr().slice(0, 7))
-
+  const revenueToday = computed(() =>
+    scopedPayments.value.filter((p) => p.date === todayStr()).reduce((s, p) => s + p.amount, 0)
+  )
   const revenueMonth = computed(() =>
     scopedPayments.value.filter((p) => monthKey(p.date) === thisMonth.value).reduce((s, p) => s + p.amount, 0)
   )
@@ -362,7 +341,6 @@ export const useKostStore = defineStore('kost', () => {
   const totalExpense = computed(() => scopedExpenses.value.reduce((s, e) => s + e.amount, 0))
   const netProfit = computed(() => totalRevenue.value - totalExpense.value)
 
-  // Revenue series for last N days
   function revenueSeries(days = 14) {
     const out = []
     for (let i = days - 1; i >= 0; i--) {
@@ -373,7 +351,6 @@ export const useKostStore = defineStore('kost', () => {
     return out
   }
 
-  // Occupancy per property
   const occupancyByProperty = computed(() =>
     properties.value.map((p) => {
       const rs = rooms.value.filter((r) => r.propertyId === p.id)
@@ -381,199 +358,140 @@ export const useKostStore = defineStore('kost', () => {
       return { ...p, rooms: rs.length, filled, rate: rs.length ? Math.round((filled / rs.length) * 100) : 0 }
     })
   )
-
-  // Room type distribution (scoped)
   const roomTypeDistribution = computed(() => {
     const map = {}
     for (const r of scopedRooms.value) map[r.type] = (map[r.type] || 0) + 1
     return Object.entries(map).map(([label, value]) => ({ label, value }))
   })
-
-  // Booking sources distribution (scoped)
   const sourceDistribution = computed(() => {
     const map = {}
     for (const b of scopedBookings.value) map[b.source] = (map[b.source] || 0) + 1
     return Object.entries(map).map(([label, value]) => ({ label, value }))
   })
-
-  // Upcoming check-outs
+  const durationDistribution = computed(() => {
+    const map = {}
+    for (const b of scopedBookings.value) { const l = durationByKey(b.durationKey).label; map[l] = (map[l] || 0) + 1 }
+    return DURATIONS.map((d) => ({ label: d.label, value: map[d.label] || 0 })).filter((x) => x.value)
+  })
   const upcomingCheckouts = computed(() =>
-    [...scopedActiveBookings.value].sort((a, b) => a.checkOut.localeCompare(b.checkOut))
+    [...scopedActiveBookings.value].sort((a, b) => bookingCheckOutAt(a).localeCompare(bookingCheckOutAt(b)))
   )
 
-  // plain snapshot (lepas dari proxy Vue) untuk dikirim ke Supabase
   const plain = (o) => JSON.parse(JSON.stringify(o))
 
   // ── Actions: Property ──
-  function addProperty(data) {
-    const p = { id: uid('p'), hue: 158, rating: 4.5, ...data }
-    properties.value.push(p)
-    dbUpsert('properties', plain(p))
-  }
+  function addProperty(data) { const p = { id: uid('p'), hue: 158, rating: 4.5, type: 'Campur', ...data }; properties.value.push(p); dbUpsert('properties', plain(p)) }
   function updateProperty(id, data) { const p = propertyById(id); if (p) { Object.assign(p, data); dbUpsert('properties', plain(p)) } }
   function removeProperty(id) {
     if (rooms.value.some((r) => r.propertyId === id)) return { ok: false, msg: 'Masih ada kamar di properti ini.' }
-    properties.value = properties.value.filter((p) => p.id !== id)
-    dbDelete('properties', id)
-    return { ok: true }
+    properties.value = properties.value.filter((p) => p.id !== id); dbDelete('properties', id); return { ok: true }
   }
 
   // ── Actions: Room ──
   function addRoom(data) {
-    const r = { id: uid('r'), facilities: [], ...data }
-    rooms.value.push(r)
+    const rates = data.rates || {}
+    const r = { id: uid('r'), facilities: [], rates, dailyRate: rates['1h'] ?? data.dailyRate ?? 0, ...data }
+    r.rates = rates; r.dailyRate = rates['1h'] ?? r.dailyRate
+    rooms.value.push(r); dbUpsert('rooms', plain(r))
+  }
+  function updateRoom(id, data) {
+    const r = roomById(id); if (!r) return
+    Object.assign(r, data)
+    if (data.rates) r.dailyRate = data.rates['1h'] ?? r.dailyRate
     dbUpsert('rooms', plain(r))
   }
-  function updateRoom(id, data) { const r = roomById(id); if (r) { Object.assign(r, data); dbUpsert('rooms', plain(r)) } }
   function removeRoom(id) {
     if (bookingForRoom(id)) return { ok: false, msg: 'Kamar sedang terisi.' }
-    rooms.value = rooms.value.filter((r) => r.id !== id)
-    dbDelete('rooms', id)
-    return { ok: true }
+    rooms.value = rooms.value.filter((r) => r.id !== id); dbDelete('rooms', id); return { ok: true }
   }
 
   // ── Actions: Customer ──
-  function addCustomer(data) {
-    const c = { id: uid('c'), joinedAt: todayStr(), ...data }
-    customers.value.push(c)
-    dbUpsert('customers', plain(c))
-    return c
-  }
+  function addCustomer(data) { const c = { id: uid('c'), joinedAt: todayStr(), ...data }; customers.value.push(c); dbUpsert('customers', plain(c)); return c }
   function updateCustomer(id, data) { const c = customerById(id); if (c) { Object.assign(c, data); dbUpsert('customers', plain(c)) } }
   function removeCustomer(id) { customers.value = customers.value.filter((c) => c.id !== id); dbDelete('customers', id) }
 
   // ── Actions: Booking ──
   function addBooking(data) {
-    if (bookingForRoom(data.roomId)) return { ok: false, msg: 'Kamar sudah terisi.' }
-    const b = { id: uid('b'), status: 'active', paid: false, source: 'Walk-in', ...data }
-    bookings.value.push(b)
-    dbUpsert('bookings', plain(b))
+    if (data.checkInAt && data.durationKey && !isRoomAvailable(data.roomId, data.checkInAt, data.durationKey))
+      return { ok: false, msg: 'Kamar tidak tersedia untuk waktu tersebut.' }
+    const b = { id: uid('b'), status: 'active', paid: false, source: 'Walk-in', guests: 1, durationKey: '1h', checkInAt: nowStr(), ...data }
+    bookings.value.push(b); dbUpsert('bookings', plain(b))
     if (b.paid) recordPayment(b.id, bookingTotal(b), 'Transfer')
     return { ok: true, booking: b }
   }
   function checkout(id) {
-    const b = bookings.value.find((x) => x.id === id)
-    if (!b) return
+    const b = bookings.value.find((x) => x.id === id); if (!b) return
     b.status = 'checkout'
     if (!b.paid) { b.paid = true; recordPayment(b.id, bookingTotal(b), 'Tunai') }
     dbUpsert('bookings', plain(b))
   }
   function togglePaid(id) {
-    const b = bookings.value.find((x) => x.id === id)
-    if (!b) return
-    b.paid = !b.paid
-    dbUpsert('bookings', plain(b))
+    const b = bookings.value.find((x) => x.id === id); if (!b) return
+    b.paid = !b.paid; dbUpsert('bookings', plain(b))
     if (b.paid) recordPayment(b.id, bookingTotal(b), 'Transfer')
     else { payments.value = payments.value.filter((p) => p.bookingId !== id); dbDeleteBy('payments', 'bookingId', id) }
   }
   function removeBooking(id) {
     bookings.value = bookings.value.filter((b) => b.id !== id)
     payments.value = payments.value.filter((p) => p.bookingId !== id)
-    dbDelete('bookings', id)
-    dbDeleteBy('payments', 'bookingId', id)
+    dbDelete('bookings', id); dbDeleteBy('payments', 'bookingId', id)
   }
 
-  // ── Actions: Payment ──
   function recordPayment(bookingId, amount, method = 'Transfer') {
     const p = { id: uid('pay'), bookingId, amount, method, date: todayStr(), status: 'success' }
-    payments.value.push(p)
-    dbUpsert('payments', plain(p))
+    payments.value.push(p); dbUpsert('payments', plain(p))
   }
 
-  // ── Actions: Expense ──
-  function addExpense(data) {
-    const e = { id: uid('e'), date: todayStr(), note: '', ...data }
-    expenses.value.push(e)
-    dbUpsert('expenses', plain(e))
-  }
+  function addExpense(data) { const e = { id: uid('e'), date: todayStr(), note: '', ...data }; expenses.value.push(e); dbUpsert('expenses', plain(e)) }
   function removeExpense(id) { expenses.value = expenses.value.filter((e) => e.id !== id); dbDelete('expenses', id) }
 
-  // ── Actions: WhatsApp ──
   function sendBroadcast(data) {
     const bc = { id: uid('bc'), date: todayStr(), status: 'terkirim', recipients: data.recipients ?? customers.value.length, ...data }
-    broadcasts.value.unshift(bc)
-    dbUpsert('broadcasts', plain(bc))
-    return bc
+    broadcasts.value.unshift(bc); dbUpsert('broadcasts', plain(bc)); return bc
   }
-  function addTemplate(data) {
-    const t = { id: uid('t'), ...data }
-    templates.value.push(t)
-    dbUpsert('templates', plain(t))
-  }
+  function addTemplate(data) { const t = { id: uid('t'), ...data }; templates.value.push(t); dbUpsert('templates', plain(t)) }
   function removeTemplate(id) { templates.value = templates.value.filter((t) => t.id !== id); dbDelete('templates', id) }
 
-  // ── Public booking (guest) ──
-  function rangesOverlap(aStart, aEnd, bStart, bEnd) {
-    return aStart < bEnd && bStart < aEnd
+  // ── Publik / booking tamu ──
+  function overlap(aS, aE, bS, bE) { return aS < bE && bS < aE }
+  function isRoomAvailable(roomId, checkInAt, durationKey) {
+    if (!checkInAt || !durationKey) return roomStatus(roomId) === 'kosong'
+    const end = addHours(checkInAt, durationByKey(durationKey).hours)
+    return !bookings.value.some((b) => b.roomId === roomId && b.status !== 'checkout' && overlap(checkInAt, end, b.checkInAt, bookingCheckOutAt(b)))
   }
-  function isRoomAvailable(roomId, checkIn, checkOut) {
-    if (!checkIn || !checkOut) return roomStatus(roomId) === 'kosong'
-    return !bookings.value.some(
-      (b) => b.roomId === roomId && b.status !== 'checkout' && rangesOverlap(checkIn, checkOut, b.checkIn, b.checkOut)
-    )
-  }
-  function roomRating(room) {
-    const p = propertyById(room.propertyId)
-    return p ? p.rating : 4.7
-  }
-  function roomReviews(room) {
-    // deterministic pseudo review count from id
-    let h = 0
-    for (const ch of room.id) h = (h * 31 + ch.charCodeAt(0)) % 900
-    return 40 + h
-  }
+  function roomRating(room) { const p = propertyById(room.propertyId); return p ? p.rating : 4.7 }
+  function roomReviews(room) { let h = 0; for (const ch of room.id) h = (h * 31 + ch.charCodeAt(0)) % 900; return 40 + h }
   function enrichRoom(room) {
     const p = propertyById(room.propertyId)
-    return {
-      ...room,
-      property: p,
-      area: p?.area,
-      rating: roomRating(room),
-      reviews: roomReviews(room),
-    }
+    return { ...room, property: p, area: p?.area, rating: roomRating(room), reviews: roomReviews(room), startingRate: roomStartingRate(room) }
   }
   function searchRooms(filters = {}) {
-    const { area, type, checkIn, checkOut, maxPrice, q } = filters
+    const { area, type, checkInAt, durationKey, maxPrice, q } = filters
     return rooms.value
       .filter((r) => {
         const p = propertyById(r.propertyId)
         if (area && p?.area !== area) return false
         if (type && r.type !== type) return false
-        if (maxPrice && r.dailyRate > maxPrice) return false
-        if (q) {
-          const hay = `${p?.name} ${p?.area} ${r.type} ${r.number}`.toLowerCase()
-          if (!hay.includes(q.toLowerCase())) return false
-        }
-        if ((checkIn || checkOut) && !isRoomAvailable(r.id, checkIn, checkOut)) return false
+        if (maxPrice && (r.dailyRate ?? 0) > maxPrice) return false
+        if (q) { const hay = `${p?.name} ${p?.area} ${r.type} ${r.number}`.toLowerCase(); if (!hay.includes(q.toLowerCase())) return false }
+        if (checkInAt && durationKey && !isRoomAvailable(r.id, checkInAt, durationKey)) return false
         return true
       })
       .map(enrichRoom)
   }
   const priceRange = computed(() => {
     if (!rooms.value.length) return { min: 0, max: 0 }
-    const rates = rooms.value.map((r) => r.dailyRate)
+    const rates = rooms.value.map((r) => r.dailyRate ?? 0)
     return { min: Math.min(...rates), max: Math.max(...rates) }
   })
 
-  function createGuestBooking({ roomId, name, phone, email, checkIn, checkOut, guests }) {
-    if (!isRoomAvailable(roomId, checkIn, checkOut)) return { ok: false, msg: 'Maaf, kamar sudah tidak tersedia untuk tanggal tersebut.' }
-    // reuse customer by phone or create new
+  function createGuestBooking({ roomId, name, phone, email, checkInAt, durationKey, guests }) {
+    if (!isRoomAvailable(roomId, checkInAt, durationKey)) return { ok: false, msg: 'Maaf, kamar sudah tidak tersedia untuk waktu tersebut.' }
     let cust = customers.value.find((c) => c.phone === phone && phone)
     if (!cust) cust = addCustomer({ name, phone, email: email || '', idNumber: '' })
     else Object.assign(cust, { name, email: email || cust.email })
-    const b = {
-      id: uid('b'),
-      roomId,
-      customerId: cust.id,
-      checkIn,
-      checkOut,
-      guests: guests || 1,
-      status: 'active',
-      paid: false,
-      source: 'Website',
-    }
-    bookings.value.push(b)
-    dbUpsert('bookings', plain(b))
+    const b = { id: uid('b'), roomId, customerId: cust.id, checkInAt, durationKey, guests: guests || 1, status: 'active', paid: false, source: 'Website' }
+    bookings.value.push(b); dbUpsert('bookings', plain(b))
     const code = 'DK' + b.id.slice(-6).toUpperCase()
     return { ok: true, booking: b, code, customer: cust }
   }
@@ -583,9 +501,7 @@ export const useKostStore = defineStore('kost', () => {
     properties.value = s.properties; rooms.value = s.rooms; customers.value = s.customers
     bookings.value = s.bookings; payments.value = s.payments; expenses.value = s.expenses
     broadcasts.value = s.broadcasts; templates.value = s.templates
-    settings.value = { ...defaultSettings }
-    activePropertyId.value = null
-    // ganti seluruh isi DB
+    settings.value = { ...defaultSettings }; activePropertyId.value = null
     await Promise.all(TABLES.map((t) => dbClear(t)))
     await Promise.all([
       dbBulk('properties', s.properties), dbBulk('rooms', s.rooms), dbBulk('customers', s.customers),
@@ -596,28 +512,22 @@ export const useKostStore = defineStore('kost', () => {
   }
 
   return {
-    // state
     properties, rooms, customers, bookings, payments, expenses, broadcasts, templates, settings,
     activePropertyId, ready, init,
-    // lookups
     propertyById, roomById, customerById, propertyOfRoom,
-    // scoped
     scopedRooms, scopedActiveBookings, scopedBookings, scopedPayments, scopedExpenses,
     activeBookings, availableRooms,
-    // room
-    roomStatus, bookingForRoom, bookingNights, bookingTotal,
-    // kpis
+    roomStatus, bookingForRoom, isOccupiedNow,
+    bookingDuration, bookingCheckOutAt, bookingTotal, roomStartingRate,
     occupancyRate, revenueToday, outstanding, revenueMonth, expenseMonth,
     totalRevenue, totalExpense, netProfit, revenueSeries,
-    occupancyByProperty, roomTypeDistribution, sourceDistribution, upcomingCheckouts,
-    // actions
+    occupancyByProperty, roomTypeDistribution, sourceDistribution, durationDistribution, upcomingCheckouts,
     addProperty, updateProperty, removeProperty,
     addRoom, updateRoom, removeRoom,
     addCustomer, updateCustomer, removeCustomer,
     addBooking, checkout, togglePaid, removeBooking,
     recordPayment, addExpense, removeExpense,
     sendBroadcast, addTemplate, removeTemplate,
-    // public booking
     isRoomAvailable, searchRooms, roomRating, roomReviews, enrichRoom, priceRange, createGuestBooking,
     resetData,
   }

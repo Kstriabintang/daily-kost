@@ -1,7 +1,7 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
-import { useKostStore, todayStr, addDays, daysBetween } from '../stores/kost'
-import { rupiah, tanggal, relatif } from '../utils/format'
+import { useKostStore, DURATIONS, durationByKey, todayStr, nowStr } from '../stores/kost'
+import { rupiah, tanggalWaktu, waktu, relatif } from '../utils/format'
 import PageHeader from '../components/PageHeader.vue'
 import ModalDialog from '../components/ModalDialog.vue'
 import Avatar from '../components/Avatar.vue'
@@ -11,26 +11,27 @@ const store = useKostStore()
 const tab = ref('active')
 const open = ref(false)
 
-const form = reactive({ roomId: '', customerId: '', newName: '', newPhone: '', checkIn: todayStr(), checkOut: addDays(todayStr(), 2), source: 'Walk-in' })
+const defaultTime = () => `${String(new Date().getHours()).padStart(2, '0')}:00`
+const form = reactive({ roomId: '', customerId: '', newName: '', newPhone: '', date: todayStr(), time: defaultTime(), durasi: '6j', source: 'Walk-in' })
 
-const nights = computed(() => (form.checkIn && form.checkOut && form.checkOut > form.checkIn ? daysBetween(form.checkIn, form.checkOut) : 0))
-const previewTotal = computed(() => (store.roomById(form.roomId)?.dailyRate ?? 0) * nights.value)
+const checkInAt = computed(() => `${form.date}T${form.time}`)
+const previewTotal = computed(() => store.roomById(form.roomId)?.rates?.[form.durasi] ?? 0)
 
-const active = computed(() => [...store.scopedActiveBookings].sort((a, b) => a.checkOut.localeCompare(b.checkOut)))
-const history = computed(() => store.scopedBookings.filter((b) => b.status === 'checkout').sort((a, b) => b.checkOut.localeCompare(a.checkOut)))
+const active = computed(() => [...store.scopedActiveBookings].sort((a, b) => store.bookingCheckOutAt(a).localeCompare(store.bookingCheckOutAt(b))))
+const history = computed(() => store.scopedBookings.filter((b) => b.status === 'checkout').sort((a, b) => (b.checkInAt || '').localeCompare(a.checkInAt || '')))
 
 function openCreate() {
-  Object.assign(form, { roomId: store.availableRooms[0]?.id ?? '', customerId: '', newName: '', newPhone: '', checkIn: todayStr(), checkOut: addDays(todayStr(), 2), source: 'Walk-in' })
+  Object.assign(form, { roomId: store.availableRooms[0]?.id ?? '', customerId: '', newName: '', newPhone: '', date: todayStr(), time: defaultTime(), durasi: '6j', source: 'Walk-in' })
   open.value = true
 }
 function save() {
-  if (!form.roomId || nights.value < 1) return
+  if (!form.roomId) return
   let customerId = form.customerId
   if (!customerId) {
     if (!form.newName.trim()) return
     customerId = store.addCustomer({ name: form.newName.trim(), phone: form.newPhone.trim(), email: '', idNumber: '' }).id
   }
-  const res = store.addBooking({ roomId: form.roomId, customerId, checkIn: form.checkIn, checkOut: form.checkOut, source: form.source })
+  const res = store.addBooking({ roomId: form.roomId, customerId, checkInAt: checkInAt.value, durationKey: form.durasi, source: form.source })
   if (!res.ok) return alert(res.msg)
   open.value = false
 }
@@ -42,7 +43,7 @@ const sourceTone = { 'Walk-in': 'bg-brand-50 text-brand-500', WhatsApp: 'bg-emer
 
 <template>
   <div>
-    <PageHeader title="Booking & Reservasi" :subtitle="`${active.length} penghuni aktif`">
+    <PageHeader title="Booking & Reservasi" :subtitle="`${active.length} tamu aktif · kos singgah`">
       <template #actions>
         <button class="btn-primary" :disabled="!store.availableRooms.length" @click="openCreate"><Icon name="plus" :size="16" /> Booking Baru</button>
       </template>
@@ -68,13 +69,14 @@ const sourceTone = { 'Walk-in': 'bg-brand-50 text-brand-500', WhatsApp: 'bg-emer
         </div>
 
         <div class="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-brand-50/60 p-3 text-center">
-          <div><p class="text-[11px] text-brand-400">Check-in</p><p class="text-sm font-semibold text-brand-700">{{ tanggal(b.checkIn, { year: undefined }) }}</p></div>
-          <div><p class="text-[11px] text-brand-400">Check-out</p><p class="text-sm font-semibold text-brand-700">{{ tanggal(b.checkOut, { year: undefined }) }}</p><p class="text-[10px] text-gold-600">{{ relatif(b.checkOut) }}</p></div>
-          <div><p class="text-[11px] text-brand-400">{{ store.bookingNights(b) }} malam</p><p class="text-sm font-bold text-brand-600">{{ rupiah(store.bookingTotal(b)) }}</p></div>
+          <div><p class="text-[11px] text-brand-400">Masuk</p><p class="text-sm font-semibold text-brand-700">{{ waktu(b.checkInAt) }}</p><p class="text-[10px] text-brand-400">{{ tanggalWaktu(b.checkInAt).split('·')[0] }}</p></div>
+          <div><p class="text-[11px] text-brand-400">Selesai</p><p class="text-sm font-semibold text-brand-700">{{ waktu(store.bookingCheckOutAt(b)) }}</p><p class="text-[10px] text-gold-600">{{ relatif((store.bookingCheckOutAt(b) || '').slice(0, 10)) }}</p></div>
+          <div><p class="text-[11px] text-brand-400">{{ store.bookingDuration(b).label }}</p><p class="text-sm font-bold text-brand-600">{{ rupiah(store.bookingTotal(b)) }}</p></div>
         </div>
 
         <div class="mt-3 flex items-center gap-2">
-          <span class="chip" :class="sourceTone[b.source]">{{ b.source }}</span>
+          <span class="chip" :class="sourceTone[b.source] || 'bg-brand-50 text-brand-500'">{{ b.source }}</span>
+          <span v-if="store.isOccupiedNow(b.roomId)" class="chip bg-emerald-50 text-emerald-600"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Di kamar</span>
           <div class="flex-1" />
           <button class="btn-dark px-4 py-2" @click="doCheckout(b)"><Icon name="logout" :size="15" /> Check-out</button>
           <button class="btn px-3 py-2 text-rose-500 hover:bg-rose-50" @click="store.removeBooking(b.id)"><Icon name="trash" :size="15" /></button>
@@ -87,41 +89,47 @@ const sourceTone = { 'Walk-in': 'bg-brand-50 text-brand-500', WhatsApp: 'bg-emer
     <div v-else class="card overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full">
-          <thead class="bg-brand-50/60"><tr><th class="th">Tamu</th><th class="th">Kamar</th><th class="th">Periode</th><th class="th">Sumber</th><th class="th text-right">Total</th></tr></thead>
+          <thead class="bg-brand-50/60"><tr><th class="th">Tamu</th><th class="th">Kamar</th><th class="th">Masuk</th><th class="th">Durasi</th><th class="th">Sumber</th><th class="th text-right">Total</th></tr></thead>
           <tbody class="divide-y divide-brand-700/5">
             <tr v-for="b in history" :key="b.id" class="hover:bg-brand-50/40">
               <td class="td font-medium">{{ store.customerById(b.customerId)?.name }}</td>
               <td class="td text-brand-400">{{ store.roomById(b.roomId)?.number }}</td>
-              <td class="td text-brand-400">{{ tanggal(b.checkIn, { year: undefined }) }} – {{ tanggal(b.checkOut, { year: undefined }) }} · {{ store.bookingNights(b) }}m</td>
-              <td class="td"><span class="chip" :class="sourceTone[b.source]">{{ b.source }}</span></td>
+              <td class="td text-brand-400">{{ tanggalWaktu(b.checkInAt) }}</td>
+              <td class="td text-brand-400">{{ store.bookingDuration(b).label }}</td>
+              <td class="td"><span class="chip" :class="sourceTone[b.source] || 'bg-brand-50 text-brand-500'">{{ b.source }}</span></td>
               <td class="td text-right font-semibold">{{ rupiah(store.bookingTotal(b)) }}</td>
             </tr>
-            <tr v-if="!history.length"><td colspan="5" class="td py-10 text-center text-brand-300">Belum ada riwayat.</td></tr>
+            <tr v-if="!history.length"><td colspan="6" class="td py-10 text-center text-brand-300">Belum ada riwayat.</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
     <!-- Modal -->
-    <ModalDialog :open="open" title="Booking Baru" subtitle="Reservasi kamar harian" @close="open = false">
+    <ModalDialog :open="open" title="Booking Baru" subtitle="Reservasi kamar singgah" @close="open = false">
       <form class="space-y-4" @submit.prevent="save">
-        <div><label class="label">Kamar</label><select v-model="form.roomId" class="input"><option v-for="r in store.availableRooms" :key="r.id" :value="r.id">{{ store.propertyById(r.propertyId)?.name }} · Kamar {{ r.number }} · {{ rupiah(r.dailyRate) }}/hari</option></select></div>
+        <div><label class="label">Kamar</label><select v-model="form.roomId" class="input"><option v-for="r in store.availableRooms" :key="r.id" :value="r.id">{{ store.propertyById(r.propertyId)?.name }} · Kamar {{ r.number }} · {{ r.type }}</option></select></div>
         <div><label class="label">Penghuni</label><select v-model="form.customerId" class="input"><option value="">+ Tamu baru</option><option v-for="c in store.customers" :key="c.id" :value="c.id">{{ c.name }} · {{ c.phone }}</option></select></div>
         <div v-if="!form.customerId" class="grid grid-cols-2 gap-3">
           <div><label class="label">Nama tamu</label><input v-model="form.newName" class="input" placeholder="Nama lengkap" /></div>
           <div><label class="label">No. HP</label><input v-model="form.newPhone" class="input" placeholder="0812..." /></div>
         </div>
+        <div><label class="label">Durasi</label>
+          <div class="grid grid-cols-5 gap-1.5">
+            <button v-for="d in DURATIONS" :key="d.key" type="button" @click="form.durasi = d.key" class="rounded-lg border-2 py-2 text-xs font-semibold transition" :class="form.durasi === d.key ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-brand-100 text-brand-400'">{{ d.label }}</button>
+          </div>
+        </div>
         <div class="grid grid-cols-2 gap-3">
-          <div><label class="label">Check-in</label><input v-model="form.checkIn" type="date" class="input" /></div>
-          <div><label class="label">Check-out</label><input v-model="form.checkOut" type="date" :min="form.checkIn" class="input" /></div>
+          <div><label class="label">Tanggal masuk</label><input v-model="form.date" type="date" :min="todayStr()" class="input" /></div>
+          <div><label class="label">Jam masuk</label><input v-model="form.time" type="time" class="input" /></div>
         </div>
         <div><label class="label">Sumber booking</label><select v-model="form.source" class="input"><option>Walk-in</option><option>WhatsApp</option><option>OTA</option><option>Referral</option></select></div>
 
         <div class="flex items-center justify-between rounded-xl bg-brand-700 px-4 py-3 text-white">
-          <span class="text-sm text-brand-100">{{ nights }} malam</span>
+          <span class="text-sm text-brand-100">{{ durationByKey(form.durasi).label }}</span>
           <span class="font-display text-xl font-bold text-gold-300">{{ rupiah(previewTotal) }}</span>
         </div>
-        <div class="flex justify-end gap-2"><button type="button" class="btn-ghost" @click="open = false">Batal</button><button type="submit" :disabled="nights < 1" class="btn-primary">Simpan Booking</button></div>
+        <div class="flex justify-end gap-2"><button type="button" class="btn-ghost" @click="open = false">Batal</button><button type="submit" :disabled="!form.roomId" class="btn-primary">Simpan Booking</button></div>
       </form>
     </ModalDialog>
   </div>

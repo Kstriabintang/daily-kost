@@ -49,7 +49,7 @@ function stats(id) {
         <!-- Cover -->
         <div class="relative h-28" :style="{ background: `linear-gradient(135deg, hsl(${p.hue} 42% 34%), hsl(${p.hue} 55% 22%))` }">
           <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(circle at 20% 30%, white 1px, transparent 1px); background-size: 22px 22px;" />
-          <span class="absolute top-3 left-3 chip bg-white/15 text-white backdrop-blur">{{ p.type }}</span>
+          <span class="absolute top-3 left-3 chip bg-white/15 text-white backdrop-blur"><Icon name="clock" :size="12" /> Kos Singgah</span>
           <span class="absolute top-3 right-3 chip bg-gold-500 text-brand-900"><Icon name="star" :size="12" /> {{ p.rating }}</span>
           <div class="absolute bottom-3 left-4 text-white">
             <p class="flex items-center gap-1 text-[11px] text-white/80"><Icon name="mapPin" :size="12" /> {{ p.area }}</p>
@@ -85,10 +85,7 @@ function stats(id) {
     <ModalDialog :open="open" :title="editId ? 'Edit Properti' : 'Tambah Properti'" subtitle="Cabang kos di Pontianak" @close="open = false">
       <form class="space-y-4" @submit.prevent="save">
         <div><label class="label">Nama properti</label><input v-model="form.name" class="input" placeholder="mis. Green Garden Residence" /></div>
-        <div class="grid grid-cols-2 gap-3">
-          <div><label class="label">Area</label><select v-model="form.area" class="input"><option v-for="a in AREAS" :key="a">{{ a }}</option></select></div>
-          <div><label class="label">Tipe</label><select v-model="form.type" class="input"><option>Campur</option><option>Putra</option><option>Putri</option></select></div>
-        </div>
+        <div><label class="label">Area</label><select v-model="form.area" class="input"><option v-for="a in AREAS" :key="a">{{ a }}</option></select></div>
         <div><label class="label">Alamat</label><input v-model="form.address" class="input" placeholder="Jl. ..." /></div>
         <div class="grid grid-cols-2 gap-3">
           <div><label class="label">Telepon</label><input v-model="form.phone" class="input" placeholder="0561-..." /></div>

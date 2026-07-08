@@ -1,8 +1,8 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
-import { useKostStore, daysBetween } from '../../stores/kost'
-import { rupiah, tanggal } from '../../utils/format'
+import { useKostStore, durationByKey, addHours } from '../../stores/kost'
+import { rupiah, tanggalWaktu } from '../../utils/format'
 import Icon from '../../components/Icon.vue'
 
 const store = useKostStore()
@@ -13,10 +13,10 @@ const room = computed(() => {
   return r ? store.enrichRoom(r) : null
 })
 const code = computed(() => route.query.code || 'DK000000')
-const checkIn = computed(() => route.query.checkIn)
-const checkOut = computed(() => route.query.checkOut)
-const nights = computed(() => (checkIn.value && checkOut.value ? daysBetween(checkIn.value, checkOut.value) : 1))
-const total = computed(() => (room.value ? room.value.dailyRate * nights.value : 0))
+const durasi = computed(() => durationByKey(route.query.durasi))
+const checkInAt = computed(() => (route.query.date && route.query.time ? `${route.query.date}T${route.query.time}` : null))
+const checkOutAt = computed(() => (checkInAt.value ? addHours(checkInAt.value, durasi.value.hours) : null))
+const total = computed(() => (room.value ? (room.value.rates?.[route.query.durasi] ?? room.value.dailyRate) : 0))
 </script>
 
 <template>
@@ -52,9 +52,9 @@ const total = computed(() => (room.value ? room.value.dailyRate * nights.value :
           </div>
 
           <div class="my-4 grid grid-cols-3 gap-2 rounded-xl bg-brand-50/60 p-3 text-center">
-            <div><p class="text-[11px] text-brand-400">Check-in</p><p class="text-sm font-semibold text-brand-800">{{ tanggal(checkIn, { year: undefined }) }}</p></div>
-            <div><p class="text-[11px] text-brand-400">Check-out</p><p class="text-sm font-semibold text-brand-800">{{ tanggal(checkOut, { year: undefined }) }}</p></div>
-            <div><p class="text-[11px] text-brand-400">Durasi</p><p class="text-sm font-semibold text-brand-800">{{ nights }} malam</p></div>
+            <div><p class="text-[11px] text-brand-400">Masuk</p><p class="text-sm font-semibold text-brand-800">{{ tanggalWaktu(checkInAt) }}</p></div>
+            <div><p class="text-[11px] text-brand-400">Selesai</p><p class="text-sm font-semibold text-brand-800">{{ tanggalWaktu(checkOutAt) }}</p></div>
+            <div><p class="text-[11px] text-brand-400">Durasi</p><p class="text-sm font-semibold text-brand-800">{{ durasi.label }}</p></div>
           </div>
 
           <div class="flex items-center justify-between border-t border-dashed border-brand-200 pt-4">

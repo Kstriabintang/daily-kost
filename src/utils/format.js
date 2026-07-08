@@ -43,6 +43,17 @@ export function relatif(dateStr) {
   return `${Math.abs(days)} hari lalu`
 }
 
+export function waktu(dt) {
+  // "YYYY-MM-DDTHH:MM" -> "10:00"
+  if (!dt) return '-'
+  return dt.slice(11, 16) || '-'
+}
+export function tanggalWaktu(dt, opts = {}) {
+  if (!dt) return '-'
+  const [d, t] = dt.split('T')
+  return `${tanggal(d, { year: undefined, ...opts })} · ${t ? t.slice(0, 5) : ''}`
+}
+
 export function initials(name = '') {
   return name
     .split(' ')
