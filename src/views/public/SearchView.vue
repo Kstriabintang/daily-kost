@@ -49,7 +49,7 @@ const passQuery = computed(() => ({ checkIn: checkIn.value, checkOut: checkOut.v
 </script>
 
 <template>
-  <div class="bg-cream-50 pt-20 pb-16">
+  <div class="pt-20 pb-16">
     <!-- Search summary bar -->
     <div class="border-b border-brand-700/5 bg-white">
       <div class="mx-auto max-w-6xl px-5 py-4">

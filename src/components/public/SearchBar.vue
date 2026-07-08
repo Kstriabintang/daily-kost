@@ -55,8 +55,8 @@ function submit() {
         </select>
       </span>
     </label>
-    <button type="submit" class="btn-primary h-full min-h-[52px] px-6 text-base">
-      <Icon name="search" :size="18" /> <span class="lg:hidden xl:inline">Cari</span>
+    <button type="submit" class="btn-primary h-full min-h-[52px] px-6 text-base sm:col-span-2 lg:col-span-1">
+      <Icon name="search" :size="18" /> <span class="lg:hidden xl:inline">Cari Kamar</span>
     </button>
   </form>
 </template>

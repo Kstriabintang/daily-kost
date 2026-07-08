@@ -9,7 +9,7 @@ const solidNav = computed(() => route.name !== 'home')
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col bg-cream-50">
+  <div class="aurora flex min-h-screen flex-col">
     <PublicNavbar :solid="solidNav" />
     <main class="flex-1">
       <RouterView v-slot="{ Component }">

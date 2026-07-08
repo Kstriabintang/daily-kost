@@ -46,13 +46,11 @@ const steps = [
 <template>
   <div>
     <!-- HERO -->
-    <section class="relative overflow-hidden bg-brand-700 pt-28 pb-40 text-white">
-      <div class="absolute inset-0">
-        <PhotoBox seed="hero-pontianak-kost" :hue="160" :w="1600" :h="900" />
-        <div class="absolute inset-0 bg-gradient-to-br from-brand-900/85 via-brand-800/80 to-brand-700/75" />
-      </div>
+    <section class="hero-mesh hero-mesh-animated relative overflow-hidden pt-24 pb-32 text-white sm:pt-28 sm:pb-40">
+      <div class="grid-overlay absolute inset-0 opacity-60" />
       <div class="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-brand-500/30 blur-3xl animate-float-slow" />
       <div class="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-gold-500/15 blur-3xl animate-float" />
+      <div class="absolute top-1/3 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-emerald-400/10 blur-3xl" />
 
       <div class="relative mx-auto max-w-6xl px-5">
         <div class="mx-auto max-w-3xl text-center">
@@ -80,7 +78,7 @@ const steps = [
         </div>
       </div>
 
-      <svg class="absolute -bottom-1 left-0 w-full text-cream-50" viewBox="0 0 1440 80" preserveAspectRatio="none" fill="currentColor"><path d="M0 80V40c240 30 480 30 720 10S1200 20 1440 40v40Z" /></svg>
+      <svg class="absolute -bottom-1 left-0 w-full text-[#f4f8f5]" viewBox="0 0 1440 80" preserveAspectRatio="none" fill="currentColor"><path d="M0 80V40c240 30 480 30 720 10S1200 20 1440 40v40Z" /></svg>
     </section>
 
     <!-- POPULAR ROOMS -->

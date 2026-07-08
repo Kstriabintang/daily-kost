@@ -20,7 +20,7 @@ const total = computed(() => (room.value ? room.value.dailyRate * nights.value :
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-cream-50 px-5 pt-24 pb-16">
+  <div class="flex min-h-screen items-center justify-center px-5 pt-24 pb-16">
     <div class="w-full max-w-lg">
       <!-- Animated check -->
       <div class="relative mx-auto mb-6 h-24 w-24">

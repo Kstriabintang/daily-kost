@@ -21,16 +21,18 @@ const pick = (arr) => arr[Math.floor(rng() * arr.length)]
 const randInt = (min, max) => min + Math.floor(rng() * (max - min + 1))
 
 export function daysBetween(a, b) {
-  const d1 = new Date(a + 'T00:00:00')
-  const d2 = new Date(b + 'T00:00:00')
+  const d1 = new Date(a + 'T00:00:00Z')
+  const d2 = new Date(b + 'T00:00:00Z')
   return Math.max(1, Math.round((d2 - d1) / 86400000))
 }
 export function todayStr() {
-  return new Date().toISOString().slice(0, 10)
+  // local calendar date (Y-M-D), timezone-safe
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 export function addDays(dateStr, n) {
-  const d = new Date((dateStr || todayStr()) + 'T00:00:00')
-  d.setDate(d.getDate() + n)
+  const d = new Date((dateStr || todayStr()) + 'T00:00:00Z')
+  d.setUTCDate(d.getUTCDate() + n)
   return d.toISOString().slice(0, 10)
 }
 

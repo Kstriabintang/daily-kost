@@ -41,7 +41,7 @@ function goBook() {
 </script>
 
 <template>
-  <div v-if="room" class="bg-cream-50 pt-24 pb-16">
+  <div v-if="room" class="pt-24 pb-28 lg:pb-16">
     <div class="mx-auto max-w-6xl px-5">
       <!-- Breadcrumb -->
       <nav class="mb-4 flex items-center gap-1.5 text-sm text-brand-400">
@@ -141,6 +141,17 @@ function goBook() {
         <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <div v-for="(r, i) in similar" :key="r.id" v-reveal="{ delay: i * 80 }"><RoomCard :room="r" /></div>
         </div>
+      </div>
+    </div>
+
+    <!-- Mobile sticky booking bar -->
+    <div class="glass fixed inset-x-0 bottom-0 z-40 border-t border-brand-700/10 px-4 py-3 shadow-[0_-8px_24px_-12px_rgba(16,56,42,0.25)] lg:hidden">
+      <div class="mx-auto flex max-w-6xl items-center justify-between gap-3">
+        <div>
+          <p class="font-display text-lg font-bold text-brand-700">{{ rupiah(room.dailyRate) }}<span class="text-xs font-normal text-brand-400">/malam</span></p>
+          <p class="flex items-center gap-1 text-[11px] text-brand-400"><Icon name="star" :size="11" class="text-gold-500" /> {{ room.rating }} · {{ nights }} malam</p>
+        </div>
+        <button class="btn-primary px-7 py-3 text-base" :disabled="!nights || !available" @click="goBook"><Icon name="arrowRight" :size="18" /> Pesan</button>
       </div>
     </div>
   </div>

@@ -53,7 +53,7 @@ function confirm() {
 </script>
 
 <template>
-  <div v-if="room" class="bg-cream-50 pt-24 pb-16">
+  <div v-if="room" class="pt-24 pb-16">
     <div class="mx-auto max-w-5xl px-5">
       <RouterLink :to="`/kamar/${room.id}`" class="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-brand-500 hover:text-brand-700"><Icon name="chevronRight" :size="15" class="rotate-180" /> Kembali ke detail</RouterLink>
 
