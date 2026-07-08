@@ -37,7 +37,7 @@ const passQuery = computed(() => ({ date: date.value, time: time.value, durasi: 
 
 <template>
   <div class="pt-20 pb-16">
-    <div class="border-b border-brand-700/5 bg-white">
+    <div class="border-b border-line bg-surface">
       <div class="mx-auto max-w-6xl px-5 py-4">
         <SearchBar :initial="{ area: filters.area, date, time, durasi, guests: Number(route.query.guests) || 1 }" />
       </div>
@@ -46,18 +46,18 @@ const passQuery = computed(() => ({ date: date.value, time: time.value, durasi: 
     <div class="mx-auto max-w-6xl px-5 pt-6">
       <div class="mb-5 flex items-center justify-between">
         <div>
-          <h1 class="font-display text-2xl font-bold text-brand-800">
+          <h1 class="font-display text-2xl font-bold text-ink">
             {{ results.length }} kamar tersedia
-            <span v-if="filters.area" class="text-brand-500">di {{ filters.area.replace('Pontianak ', '') }}</span>
+            <span v-if="filters.area" class="text-muted">di {{ filters.area.replace('Pontianak ', '') }}</span>
           </h1>
-          <p class="flex flex-wrap items-center gap-2 text-sm text-brand-400">
-            <span class="chip bg-brand-50 text-brand-600"><Icon name="sparkles" :size="12" /> {{ durLabel }}</span>
+          <p class="flex flex-wrap items-center gap-2 text-sm text-soft">
+            <span class="chip bg-tint text-accent"><Icon name="sparkles" :size="12" /> {{ durLabel }}</span>
             <span v-if="checkInAt">masuk {{ tanggalPendek(date) }} · {{ time }}</span>
           </p>
         </div>
         <div class="flex items-center gap-2">
           <button class="btn-outline lg:hidden" @click="showFilter = !showFilter"><Icon name="filter" :size="16" /> Filter</button>
-          <select v-model="filters.sort" class="hidden rounded-xl border border-brand-200/70 bg-white px-3 py-2.5 text-sm font-medium text-brand-700 focus:outline-none sm:block">
+          <select v-model="filters.sort" class="hidden rounded-xl border border-line bg-surface px-3 py-2.5 text-sm font-medium text-strong focus:outline-none sm:block">
             <option value="rekomendasi">Rekomendasi</option>
             <option value="termurah">Harga Termurah</option>
             <option value="termahal">Harga Tertinggi</option>
@@ -70,28 +70,28 @@ const passQuery = computed(() => ({ date: date.value, time: time.value, durasi: 
         <aside class="space-y-5" :class="showFilter ? 'block' : 'hidden lg:block'">
           <div class="card p-5">
             <div class="mb-3 flex items-center justify-between">
-              <h3 class="font-semibold text-brand-800">Filter</h3>
-              <button class="text-xs font-medium text-brand-500 hover:text-brand-700" @click="resetFilters">Reset</button>
+              <h3 class="font-semibold text-ink">Filter</h3>
+              <button class="text-xs font-medium text-muted hover:text-strong" @click="resetFilters">Reset</button>
             </div>
             <div class="mb-5">
-              <p class="mb-2 text-sm font-medium text-brand-600">Area</p>
+              <p class="mb-2 text-sm font-medium text-accent">Area</p>
               <div class="space-y-1.5">
-                <label class="flex cursor-pointer items-center gap-2 text-sm text-brand-600"><input type="radio" v-model="filters.area" value="" class="accent-brand-600" /> Semua area</label>
-                <label v-for="a in AREAS" :key="a" class="flex cursor-pointer items-center gap-2 text-sm text-brand-600"><input type="radio" v-model="filters.area" :value="a" class="accent-brand-600" /> {{ a.replace('Pontianak ', '') }}</label>
+                <label class="flex cursor-pointer items-center gap-2 text-sm text-accent"><input type="radio" v-model="filters.area" value="" class="accent-brand-600" /> Semua area</label>
+                <label v-for="a in AREAS" :key="a" class="flex cursor-pointer items-center gap-2 text-sm text-accent"><input type="radio" v-model="filters.area" :value="a" class="accent-brand-600" /> {{ a.replace('Pontianak ', '') }}</label>
               </div>
             </div>
             <div class="mb-5">
-              <p class="mb-2 text-sm font-medium text-brand-600">Kelas Kamar</p>
+              <p class="mb-2 text-sm font-medium text-accent">Kelas Kamar</p>
               <div class="flex flex-wrap gap-1.5">
-                <button class="chip" :class="!filters.type ? 'bg-brand-600 text-white' : 'bg-brand-50 text-brand-500'" @click="filters.type = ''">Semua</button>
-                <button v-for="t in types" :key="t" class="chip" :class="filters.type === t ? 'bg-brand-600 text-white' : 'bg-brand-50 text-brand-500'" @click="filters.type = t">{{ t }}</button>
+                <button class="chip" :class="!filters.type ? 'bg-brand-600 text-white' : 'bg-tint text-muted'" @click="filters.type = ''">Semua</button>
+                <button v-for="t in types" :key="t" class="chip" :class="filters.type === t ? 'bg-brand-600 text-white' : 'bg-tint text-muted'" @click="filters.type = t">{{ t }}</button>
               </div>
             </div>
             <div>
-              <p class="mb-1 text-sm font-medium text-brand-600">Harga /hari maks</p>
-              <p class="mb-2 font-display text-lg font-bold text-brand-700">{{ rupiah(filters.maxPrice) }}</p>
+              <p class="mb-1 text-sm font-medium text-accent">Harga /hari maks</p>
+              <p class="mb-2 font-display text-lg font-bold text-strong">{{ rupiah(filters.maxPrice) }}</p>
               <input type="range" v-model.number="filters.maxPrice" :min="store.priceRange.min" :max="store.priceRange.max" step="5000" class="w-full accent-brand-600" />
-              <div class="mt-1 flex justify-between text-[11px] text-brand-400"><span>{{ rupiahShort(store.priceRange.min) }}</span><span>{{ rupiahShort(store.priceRange.max) }}</span></div>
+              <div class="mt-1 flex justify-between text-[11px] text-soft"><span>{{ rupiahShort(store.priceRange.min) }}</span><span>{{ rupiahShort(store.priceRange.max) }}</span></div>
             </div>
           </div>
         </aside>
@@ -101,9 +101,9 @@ const passQuery = computed(() => ({ date: date.value, time: time.value, durasi: 
             <div v-for="r in results" :key="r.id" class="animate-fade"><RoomCard :room="r" :query="passQuery" /></div>
           </div>
           <div v-else class="card flex flex-col items-center justify-center px-6 py-20 text-center">
-            <span class="flex h-16 w-16 items-center justify-center rounded-full bg-brand-50 text-brand-400"><Icon name="search" :size="30" /></span>
-            <h3 class="mt-4 font-display text-lg font-bold text-brand-800">Tidak ada kamar cocok</h3>
-            <p class="mt-1 text-sm text-brand-400">Coba ubah filter, tanggal, atau durasi.</p>
+            <span class="flex h-16 w-16 items-center justify-center rounded-full bg-tint text-soft"><Icon name="search" :size="30" /></span>
+            <h3 class="mt-4 font-display text-lg font-bold text-ink">Tidak ada kamar cocok</h3>
+            <p class="mt-1 text-sm text-soft">Coba ubah filter, tanggal, atau durasi.</p>
             <button class="btn-primary mt-5" @click="resetFilters">Reset Filter</button>
           </div>
         </div>

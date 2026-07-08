@@ -34,12 +34,12 @@ const total = computed(() => (room.value ? (room.value.rates?.[route.query.duras
       </div>
 
       <div class="animate-rise text-center" style="animation-delay: 200ms">
-        <h1 class="font-display text-3xl font-bold text-brand-800">Pemesanan Berhasil! 🎉</h1>
-        <p class="mt-2 text-brand-500">Terima kasih{{ route.query.name ? `, ${route.query.name}` : '' }}. Booking-mu sudah kami terima.</p>
+        <h1 class="font-display text-3xl font-bold text-ink">Pemesanan Berhasil! 🎉</h1>
+        <p class="mt-2 text-muted">Terima kasih{{ route.query.name ? `, ${route.query.name}` : '' }}. Booking-mu sudah kami terima.</p>
       </div>
 
       <!-- Ticket -->
-      <div class="animate-rise mt-7 overflow-hidden rounded-2xl bg-white shadow-[0_20px_50px_-20px_rgba(16,56,42,0.4)] ring-1 ring-brand-700/5" style="animation-delay: 320ms">
+      <div class="animate-rise mt-7 overflow-hidden rounded-2xl bg-surface shadow-[0_20px_50px_-20px_rgba(16,56,42,0.4)] ring-1 ring-line" style="animation-delay: 320ms">
         <div class="flex items-center justify-between bg-brand-700 px-6 py-4 text-white">
           <div><p class="text-[11px] tracking-wide text-brand-200">KODE BOOKING</p><p class="font-display text-2xl font-bold tracking-wider">{{ code }}</p></div>
           <Icon name="receipt" :size="28" class="text-gold-300" />
@@ -47,18 +47,18 @@ const total = computed(() => (room.value ? (room.value.rates?.[route.query.duras
 
         <div v-if="room" class="p-6">
           <div class="flex items-center justify-between">
-            <div><h2 class="font-display text-lg font-bold text-brand-800">{{ room.property?.name }}</h2><p class="flex items-center gap-1 text-xs text-brand-400"><Icon name="mapPin" :size="12" /> Kamar {{ room.number }} · {{ room.area }}</p></div>
-            <span class="chip bg-brand-50 text-brand-600">{{ room.type }}</span>
+            <div><h2 class="font-display text-lg font-bold text-ink">{{ room.property?.name }}</h2><p class="flex items-center gap-1 text-xs text-soft"><Icon name="mapPin" :size="12" /> Kamar {{ room.number }} · {{ room.area }}</p></div>
+            <span class="chip bg-tint text-accent">{{ room.type }}</span>
           </div>
 
-          <div class="my-4 grid grid-cols-3 gap-2 rounded-xl bg-brand-50/60 p-3 text-center">
-            <div><p class="text-[11px] text-brand-400">Masuk</p><p class="text-sm font-semibold text-brand-800">{{ tanggalWaktu(checkInAt) }}</p></div>
-            <div><p class="text-[11px] text-brand-400">Selesai</p><p class="text-sm font-semibold text-brand-800">{{ tanggalWaktu(checkOutAt) }}</p></div>
-            <div><p class="text-[11px] text-brand-400">Durasi</p><p class="text-sm font-semibold text-brand-800">{{ durasi.label }}</p></div>
+          <div class="my-4 grid grid-cols-3 gap-2 rounded-xl bg-tint/60 p-3 text-center">
+            <div><p class="text-[11px] text-soft">Masuk</p><p class="text-sm font-semibold text-ink">{{ tanggalWaktu(checkInAt) }}</p></div>
+            <div><p class="text-[11px] text-soft">Selesai</p><p class="text-sm font-semibold text-ink">{{ tanggalWaktu(checkOutAt) }}</p></div>
+            <div><p class="text-[11px] text-soft">Durasi</p><p class="text-sm font-semibold text-ink">{{ durasi.label }}</p></div>
           </div>
 
-          <div class="flex items-center justify-between border-t border-dashed border-brand-200 pt-4">
-            <div><p class="text-xs text-brand-400">Total</p><p class="font-display text-2xl font-bold text-brand-700">{{ rupiah(total) }}</p></div>
+          <div class="flex items-center justify-between border-t border-dashed border-line pt-4">
+            <div><p class="text-xs text-soft">Total</p><p class="font-display text-2xl font-bold text-strong">{{ rupiah(total) }}</p></div>
             <span class="chip bg-gold-300/25 text-gold-600">{{ route.query.payment || 'Bayar di tempat' }}</span>
           </div>
         </div>

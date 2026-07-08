@@ -78,17 +78,17 @@ const steps = [
         </div>
       </div>
 
-      <svg class="absolute -bottom-1 left-0 w-full text-[#f4f8f5]" viewBox="0 0 1440 80" preserveAspectRatio="none" fill="currentColor"><path d="M0 80V40c240 30 480 30 720 10S1200 20 1440 40v40Z" /></svg>
+      <svg class="absolute -bottom-1 left-0 w-full text-app" viewBox="0 0 1440 80" preserveAspectRatio="none" fill="currentColor"><path d="M0 80V40c240 30 480 30 720 10S1200 20 1440 40v40Z" /></svg>
     </section>
 
     <!-- POPULAR ROOMS -->
     <section class="mx-auto max-w-6xl px-5 py-16">
       <div class="mb-8 flex items-end justify-between">
         <div v-reveal>
-          <span class="chip bg-brand-50 text-brand-600"><Icon name="sparkles" :size="14" /> Pilihan Terpopuler</span>
-          <h2 class="mt-3 font-display text-3xl font-bold text-brand-800">Kamar singgah favorit</h2>
+          <span class="chip bg-tint text-accent"><Icon name="sparkles" :size="14" /> Pilihan Terpopuler</span>
+          <h2 class="mt-3 font-display text-3xl font-bold text-ink">Kamar singgah favorit</h2>
         </div>
-        <RouterLink to="/cari" class="hidden items-center gap-1 text-sm font-semibold text-brand-600 hover:gap-2 sm:flex">Lihat semua <Icon name="arrowRight" :size="16" /></RouterLink>
+        <RouterLink to="/cari" class="hidden items-center gap-1 text-sm font-semibold text-accent hover:gap-2 sm:flex">Lihat semua <Icon name="arrowRight" :size="16" /></RouterLink>
       </div>
       <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         <div v-for="(r, i) in featured" :key="r.id" v-reveal="{ delay: i * 80 }">
@@ -101,12 +101,12 @@ const steps = [
     </section>
 
     <!-- AREAS -->
-    <section class="bg-white py-16">
+    <section class="bg-surface py-16">
       <div class="mx-auto max-w-6xl px-5">
         <div v-reveal class="mx-auto mb-9 max-w-xl text-center">
-          <span class="chip bg-brand-50 text-brand-600"><Icon name="mapPin" :size="14" /> Jelajahi Lokasi</span>
-          <h2 class="mt-3 font-display text-3xl font-bold text-brand-800">Kos singgah di seluruh Pontianak</h2>
-          <p class="mt-2 text-brand-500">Pilih area terdekat — semua kamar campur, siap huni 24 jam.</p>
+          <span class="chip bg-tint text-accent"><Icon name="mapPin" :size="14" /> Jelajahi Lokasi</span>
+          <h2 class="mt-3 font-display text-3xl font-bold text-ink">Kos singgah di seluruh Pontianak</h2>
+          <p class="mt-2 text-muted">Pilih area terdekat — semua kamar campur, siap huni 24 jam.</p>
         </div>
         <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <RouterLink v-for="(a, i) in areaCards" :key="a.name" :to="`/cari?area=${encodeURIComponent(a.name)}`"
@@ -129,14 +129,14 @@ const steps = [
     <!-- WHY -->
     <section id="kenapa" class="mx-auto max-w-6xl px-5 py-16">
       <div v-reveal class="mx-auto mb-10 max-w-xl text-center">
-        <span class="chip bg-brand-50 text-brand-600">Kenapa Daily Kost</span>
-        <h2 class="mt-3 font-display text-3xl font-bold text-brand-800">Cara termudah pesan kos</h2>
+        <span class="chip bg-tint text-accent">Kenapa Daily Kost</span>
+        <h2 class="mt-3 font-display text-3xl font-bold text-ink">Cara termudah pesan kos</h2>
       </div>
       <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <div v-for="(p, i) in perks" :key="p.title" v-reveal="{ delay: i * 80 }" class="card group p-6 text-center transition hover:-translate-y-1">
-          <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600 transition group-hover:bg-brand-600 group-hover:text-white"><Icon :name="p.icon" :size="26" /></span>
-          <h3 class="mt-4 font-display text-lg font-bold text-brand-800">{{ p.title }}</h3>
-          <p class="mt-2 text-sm text-brand-500">{{ p.desc }}</p>
+          <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-tint text-accent transition group-hover:bg-brand-600 group-hover:text-white"><Icon :name="p.icon" :size="26" /></span>
+          <h3 class="mt-4 font-display text-lg font-bold text-ink">{{ p.title }}</h3>
+          <p class="mt-2 text-sm text-muted">{{ p.desc }}</p>
         </div>
       </div>
     </section>

@@ -59,6 +59,13 @@ function upsertLink(rel, href) {
 
 router.afterEach((to) => {
   const admin = to.path.startsWith('/app')
+
+  // Tema gelap hanya untuk situs publik; admin selalu terang
+  try {
+    const saved = localStorage.getItem('dk-theme')
+    document.documentElement.dataset.theme = !admin && saved === 'dark' ? 'dark' : 'light'
+  } catch (e) { /* ignore */ }
+
   const title = admin
     ? `${to.meta.title ?? 'Dashboard'} · ${BRAND} Admin`
     : `${to.meta.title ?? BRAND} · ${BRAND}`
