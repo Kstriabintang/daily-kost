@@ -1,7 +1,38 @@
 @import "tailwindcss";
 
+/* ============================================================
+   Daily Kost — Design System
+   Palet: Hijau tua (Starbucks) + Putih + Aksen Emas
+   ============================================================ */
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* Brand green scale */
+  --color-brand-50: #edf6f2;
+  --color-brand-100: #d3e9df;
+  --color-brand-200: #a6d3bf;
+  --color-brand-300: #6fb597;
+  --color-brand-400: #3f9573;
+  --color-brand-500: #1f7a57;
+  --color-brand-600: #00704a; /* Starbucks green — primary */
+  --color-brand-700: #1e3932; /* House green */
+  --color-brand-800: #14322a;
+  --color-brand-900: #0d2620;
+  --color-brand-950: #071813;
+
+  /* Gold accent (luxury) */
+  --color-gold-300: #e8d7ad;
+  --color-gold-400: #d9c084;
+  --color-gold-500: #c8a15a;
+  --color-gold-600: #b3894a;
+
+  /* Warm cream surface */
+  --color-cream-50: #faf9f5;
+  --color-cream-100: #f4f1e9;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: "Playfair Display", ui-serif, Georgia, "Times New Roman", serif;
+
+  --shadow-luxe: 0 1px 2px rgba(16, 56, 42, 0.04), 0 8px 24px -6px rgba(16, 56, 42, 0.10);
+  --shadow-luxe-lg: 0 4px 12px -2px rgba(16, 56, 42, 0.08), 0 20px 40px -12px rgba(16, 56, 42, 0.18);
 }
 
 html {
@@ -9,5 +40,88 @@ html {
 }
 
 body {
-  @apply bg-slate-50 text-slate-800 antialiased;
+  @apply bg-cream-50 text-brand-900 antialiased;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Custom scrollbar — subtle, on brand */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(30, 57, 50, 0.18);
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(30, 57, 50, 0.32);
+  background-clip: content-box;
+}
+
+/* Reusable component classes */
+@layer components {
+  .card {
+    @apply rounded-2xl bg-white ring-1 ring-brand-700/5;
+    box-shadow: var(--shadow-luxe);
+  }
+  .card-lg {
+    @apply rounded-3xl bg-white ring-1 ring-brand-700/5;
+    box-shadow: var(--shadow-luxe-lg);
+  }
+  .btn,
+  .btn-primary,
+  .btn-dark,
+  .btn-gold,
+  .btn-ghost,
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply bg-brand-600 text-white shadow-sm hover:bg-brand-500 active:scale-[0.98];
+  }
+  .btn-dark {
+    @apply bg-brand-700 text-white hover:bg-brand-800 active:scale-[0.98];
+  }
+  .btn-gold {
+    @apply bg-gold-500 text-brand-900 hover:bg-gold-400 active:scale-[0.98];
+  }
+  .btn-ghost {
+    @apply text-brand-700 hover:bg-brand-50;
+  }
+  .btn-outline {
+    @apply border border-brand-200 bg-white text-brand-700 hover:border-brand-300 hover:bg-brand-50;
+  }
+  .input {
+    @apply w-full rounded-xl border border-brand-200/70 bg-white px-3.5 py-2.5 text-sm text-brand-900 placeholder:text-brand-300 transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 focus:outline-none;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-brand-700;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium;
+  }
+  .th {
+    @apply px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-brand-400;
+  }
+  .td {
+    @apply px-5 py-4 text-sm text-brand-800;
+  }
+}
+
+/* Route transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+.fade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.fade-leave-to {
+  opacity: 0;
 }

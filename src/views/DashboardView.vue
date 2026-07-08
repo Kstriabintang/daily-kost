@@ -1,58 +1,113 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useKostStore } from '../stores/kost'
-import { rupiah, tanggal } from '../utils/format'
+import { rupiah, rupiahShort, tanggal, relatif, initials } from '../utils/format'
+import PageHeader from '../components/PageHeader.vue'
 import StatCard from '../components/StatCard.vue'
+import Icon from '../components/Icon.vue'
+import AreaChart from '../components/charts/AreaChart.vue'
+import BarChart from '../components/charts/BarChart.vue'
+import DonutChart from '../components/charts/DonutChart.vue'
 
 const store = useKostStore()
+const range = ref(14)
 
-const checkoutSoon = computed(() =>
-  [...store.activeBookings]
-    .sort((a, b) => a.checkOut.localeCompare(b.checkOut))
-    .slice(0, 5)
+const series = computed(() => store.revenueSeries(range.value).map((d) => ({ ...d, date: tanggal(d.date, { year: undefined }) })))
+const occByProp = computed(() => store.occupancyByProperty.map((p) => ({ label: p.area.replace('Pontianak ', ''), value: p.rate })))
+const roomDist = computed(() => store.roomTypeDistribution)
+
+const checkouts = computed(() => store.upcomingCheckouts.slice(0, 6))
+const recent = computed(() =>
+  [...store.payments]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 6)
+    .map((p) => {
+      const b = store.bookings.find((x) => x.id === p.bookingId)
+      const c = b && store.customerById(b.customerId)
+      return { ...p, name: c?.name ?? 'Tamu', room: b && store.roomById(b.roomId)?.number }
+    })
 )
 </script>
 
 <template>
-  <div class="space-y-6">
-    <div>
-      <h1 class="text-2xl font-bold text-slate-800">Dashboard</h1>
-      <p class="text-sm text-slate-500">Ringkasan operasional kos hari ini.</p>
-    </div>
+  <div>
+    <PageHeader title="Dashboard" :subtitle="`Ringkasan operasional ${store.activePropertyId ? store.propertyById(store.activePropertyId).name : 'seluruh cabang Pontianak'} · hari ini`">
+      <template #actions>
+        <button class="btn-outline"><Icon name="download" :size="16" /> Ekspor</button>
+        <RouterLink to="/laporan" class="btn-dark"><Icon name="chart" :size="16" /> Laporan</RouterLink>
+      </template>
+    </PageHeader>
 
+    <!-- KPI -->
     <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      <StatCard label="Okupansi" :value="`${store.occupancyRate}%`" :sub="`${store.activeBookings.length}/${store.rooms.length} kamar terisi`" icon="📊" tone="indigo" />
-      <StatCard label="Pendapatan / hari" :value="rupiah(store.revenueToday)" sub="dari kamar terisi" icon="💵" tone="emerald" />
-      <StatCard label="Kamar kosong" :value="store.availableRooms.length" sub="siap disewa" icon="🚪" tone="amber" />
-      <StatCard label="Tagihan tertunggak" :value="rupiah(store.outstanding)" sub="belum dibayar" icon="⚠️" tone="rose" />
+      <StatCard label="Okupansi" :value="`${store.occupancyRate}%`" :sub="`${store.scopedActiveBookings.length}/${store.scopedRooms.length} kamar`" icon="chart" tone="brand" :trend="8" />
+      <StatCard label="Pendapatan Bulan Ini" :value="rupiahShort(store.revenueMonth)" sub="terkumpul" icon="money" tone="gold" :trend="12" />
+      <StatCard label="Kamar Tersedia" :value="store.availableRooms.length" sub="siap disewa" icon="door" tone="emerald" />
+      <StatCard label="Tunggakan" :value="rupiahShort(store.outstanding)" sub="belum dibayar" icon="alert" tone="rose" :trend="-4" />
     </div>
 
-    <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
-      <div class="mb-4 flex items-center justify-between">
-        <h2 class="font-semibold text-slate-800">Jadwal check-out terdekat</h2>
-        <RouterLink to="/booking" class="text-sm font-medium text-indigo-600 hover:underline">Lihat semua</RouterLink>
+    <!-- Revenue chart -->
+    <div class="mt-4 grid gap-4 lg:grid-cols-3">
+      <div class="card p-5 lg:col-span-2">
+        <div class="mb-4 flex items-center justify-between">
+          <div>
+            <h2 class="font-display text-lg font-bold text-brand-800">Tren Pendapatan</h2>
+            <p class="text-sm text-brand-400">Total {{ rupiah(series.reduce((s, d) => s + d.value, 0)) }} dalam {{ range }} hari</p>
+          </div>
+          <div class="flex gap-1 rounded-lg bg-brand-50 p-1 text-xs font-semibold">
+            <button v-for="r in [7, 14, 30]" :key="r" class="rounded-md px-2.5 py-1 transition" :class="range === r ? 'bg-white text-brand-600 shadow-sm' : 'text-brand-400'" @click="range = r">{{ r }}h</button>
+          </div>
+        </div>
+        <AreaChart :data="series" :format="rupiah" :height="200" />
       </div>
 
-      <div v-if="checkoutSoon.length" class="divide-y divide-slate-100">
-        <div v-for="b in checkoutSoon" :key="b.id" class="flex items-center justify-between py-3">
-          <div class="flex items-center gap-3">
-            <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-sm font-semibold text-slate-600">
-              {{ store.roomById(b.roomId)?.number }}
-            </span>
-            <div>
-              <p class="text-sm font-medium text-slate-800">{{ b.guestName }}</p>
-              <p class="text-xs text-slate-400">Check-out {{ tanggal(b.checkOut) }}</p>
+      <div class="card p-5">
+        <h2 class="font-display text-lg font-bold text-brand-800">Komposisi Kamar</h2>
+        <p class="mb-3 text-sm text-brand-400">Berdasarkan tipe</p>
+        <DonutChart :data="roomDist" :center-value="store.scopedRooms.length" center-label="Total Kamar" />
+      </div>
+    </div>
+
+    <!-- Occupancy by property + checkouts -->
+    <div class="mt-4 grid gap-4 lg:grid-cols-3">
+      <div class="card p-5 lg:col-span-2">
+        <h2 class="font-display text-lg font-bold text-brand-800">Okupansi per Cabang</h2>
+        <p class="mb-4 text-sm text-brand-400">Tingkat hunian tiap area Pontianak</p>
+        <BarChart :data="occByProp" :format="(v) => v + '%'" :height="180" />
+      </div>
+
+      <div class="card p-5">
+        <div class="mb-3 flex items-center justify-between">
+          <h2 class="font-display text-lg font-bold text-brand-800">Check-out Terdekat</h2>
+          <RouterLink to="/booking" class="text-xs font-semibold text-brand-600 hover:underline">Semua</RouterLink>
+        </div>
+        <ul class="space-y-1">
+          <li v-for="b in checkouts" :key="b.id" class="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-brand-50">
+            <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-xs font-bold text-brand-600">{{ store.roomById(b.roomId)?.number }}</span>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-medium text-brand-800">{{ store.customerById(b.customerId)?.name }}</p>
+              <p class="text-xs text-brand-400">{{ relatif(b.checkOut) }}</p>
             </div>
+            <span class="chip" :class="b.paid ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-500'">{{ b.paid ? 'Lunas' : 'Belum' }}</span>
+          </li>
+          <li v-if="!checkouts.length" class="py-6 text-center text-sm text-brand-300">Tidak ada penghuni aktif.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Recent activity -->
+    <div class="mt-4 card p-5">
+      <h2 class="mb-3 font-display text-lg font-bold text-brand-800">Transaksi Terbaru</h2>
+      <div class="divide-y divide-brand-700/5">
+        <div v-for="r in recent" :key="r.id" class="flex items-center gap-3 py-3">
+          <span class="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-emerald-600"><Icon name="checkCircle" :size="17" /></span>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-medium text-brand-800">{{ r.name }} <span class="text-brand-300">· Kamar {{ r.room }}</span></p>
+            <p class="text-xs text-brand-400">{{ r.method }} · {{ tanggal(r.date) }}</p>
           </div>
-          <span
-            class="rounded-full px-2.5 py-1 text-xs font-medium"
-            :class="b.paid ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'"
-          >
-            {{ b.paid ? 'Lunas' : 'Belum bayar' }}
-          </span>
+          <span class="text-sm font-semibold text-brand-700">{{ rupiah(r.amount) }}</span>
         </div>
       </div>
-      <p v-else class="py-6 text-center text-sm text-slate-400">Belum ada penghuni aktif.</p>
     </div>
   </div>
 </template>

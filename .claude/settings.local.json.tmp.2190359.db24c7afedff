@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(pnpm install *)",
+      "Bash(kill -0 %1)",
+      "Bash(pnpm build *)",
+      "Bash(pnpm dev *)",
+      "Bash(curl -s http://localhost:5199/)",
+      "Bash(curl -s http://localhost:5199/src/main.js)",
+      "Bash(curl -s \"http://localhost:5199/src/App.vue\" -o /dev/null -w \"App.vue HTTP %{http_code}\\\\n\")",
+      "Bash(curl -s \"http://localhost:5199/src/views/BookingsView.vue\" -o /dev/null -w \"BookingsView HTTP %{http_code}\\\\n\")",
+      "Bash(curl -s \"http://localhost:5199/src/stores/kost.js\" -o /dev/null -w \"kost.js HTTP %{http_code}\\\\n\")",
+      "Bash(curl -s \"http://localhost:5199/src/App.vue\")",
+      "Bash(node -e \"console.log\\('node ok'\\)\")",
+      "Bash(git add *)",
+      "Bash(git -c user.name=clown -c user.email=rontassin@hotmail.com commit -q -m 'feat: aplikasi manajemen kos harian \\(Vue + Vite + Tailwind\\) *)",
+      "Bash(pkill -f \"vite --port 5199\")",
+      "Bash(git -c user.name=clown -c user.email=rontassin@hotmail.com commit -q -m 'feat: rombak jadi platform kos premium se-Pontianak \\(Emerald Luxe\\) *)"
+    ]
+  }
+}

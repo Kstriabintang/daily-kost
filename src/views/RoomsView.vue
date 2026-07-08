@@ -1,121 +1,106 @@
 <script setup>
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useKostStore } from '../stores/kost'
 import { rupiah } from '../utils/format'
+import PageHeader from '../components/PageHeader.vue'
 import ModalDialog from '../components/ModalDialog.vue'
+import Icon from '../components/Icon.vue'
 
 const store = useKostStore()
-
+const filter = ref('semua')
 const open = ref(false)
 const editId = ref(null)
-const form = reactive({ number: '', type: 'Standard', dailyRate: 120000, facilities: '' })
+const form = reactive({ propertyId: '', number: '', floor: 1, type: 'Superior', dailyRate: 165000, monthlyRate: 2100000, facilities: '' })
+
+const rooms = computed(() => {
+  let list = store.scopedRooms
+  if (filter.value === 'kosong') list = list.filter((r) => store.roomStatus(r.id) === 'kosong')
+  if (filter.value === 'terisi') list = list.filter((r) => store.roomStatus(r.id) === 'terisi')
+  return [...list].sort((a, b) => a.propertyId.localeCompare(b.propertyId) || a.number.localeCompare(b.number))
+})
 
 function openCreate() {
   editId.value = null
-  Object.assign(form, { number: '', type: 'Standard', dailyRate: 120000, facilities: '' })
+  Object.assign(form, { propertyId: store.activePropertyId || store.properties[0]?.id, number: '', floor: 1, type: 'Superior', dailyRate: 165000, monthlyRate: 2100000, facilities: 'AC, WiFi, KM dalam' })
   open.value = true
 }
-
-function openEdit(room) {
-  editId.value = room.id
-  Object.assign(form, {
-    number: room.number,
-    type: room.type,
-    dailyRate: room.dailyRate,
-    facilities: room.facilities.join(', '),
-  })
+function openEdit(r) {
+  editId.value = r.id
+  Object.assign(form, { propertyId: r.propertyId, number: r.number, floor: r.floor, type: r.type, dailyRate: r.dailyRate, monthlyRate: r.monthlyRate, facilities: r.facilities.join(', ') })
   open.value = true
 }
-
 function save() {
   if (!form.number.trim()) return
-  const payload = {
-    number: form.number.trim(),
-    type: form.type,
-    dailyRate: Number(form.dailyRate) || 0,
-    facilities: form.facilities.split(',').map((f) => f.trim()).filter(Boolean),
-  }
+  const payload = { ...form, dailyRate: Number(form.dailyRate) || 0, monthlyRate: Number(form.monthlyRate) || 0, floor: Number(form.floor) || 1, facilities: form.facilities.split(',').map((f) => f.trim()).filter(Boolean) }
   if (editId.value) store.updateRoom(editId.value, payload)
   else store.addRoom(payload)
   open.value = false
 }
-
-function del(room) {
-  const res = store.removeRoom(room.id)
+function del(r) {
+  const res = store.removeRoom(r.id)
   if (!res.ok) alert(res.msg)
 }
 </script>
 
 <template>
-  <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-slate-800">Kamar</h1>
-        <p class="text-sm text-slate-500">{{ store.rooms.length }} kamar · {{ store.availableRooms.length }} kosong</p>
-      </div>
-      <button class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700" @click="openCreate">
-        + Tambah Kamar
-      </button>
+  <div>
+    <PageHeader title="Kamar" :subtitle="`${store.scopedRooms.length} kamar · ${store.availableRooms.length} tersedia`">
+      <template #actions>
+        <button class="btn-primary" @click="openCreate"><Icon name="plus" :size="16" /> Tambah Kamar</button>
+      </template>
+    </PageHeader>
+
+    <div class="mb-4 flex gap-1 rounded-xl bg-white p-1 ring-1 ring-brand-700/5 shadow-sm sm:inline-flex">
+      <button v-for="f in [['semua', 'Semua'], ['kosong', 'Kosong'], ['terisi', 'Terisi']]" :key="f[0]"
+        class="flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition sm:flex-none" :class="filter === f[0] ? 'bg-brand-600 text-white shadow-sm' : 'text-brand-400 hover:text-brand-600'" @click="filter = f[0]">{{ f[1] }}</button>
     </div>
 
     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      <div v-for="room in store.rooms" :key="room.id" class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+      <div v-for="r in rooms" :key="r.id" class="card p-5">
         <div class="flex items-start justify-between">
           <div>
-            <p class="text-lg font-bold text-slate-800">Kamar {{ room.number }}</p>
-            <p class="text-xs text-slate-400">{{ room.type }}</p>
+            <p class="font-display text-xl font-bold text-brand-800">Kamar {{ r.number }}</p>
+            <p class="text-xs text-brand-400">{{ store.propertyById(r.propertyId)?.name }} · Lt. {{ r.floor }}</p>
           </div>
-          <span
-            class="rounded-full px-2.5 py-1 text-xs font-medium"
-            :class="store.roomStatus(room.id) === 'kosong' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'"
-          >
-            {{ store.roomStatus(room.id) === 'kosong' ? 'Kosong' : 'Terisi' }}
+          <span class="chip" :class="store.roomStatus(r.id) === 'kosong' ? 'bg-emerald-50 text-emerald-600' : 'bg-brand-50 text-brand-500'">
+            <span class="h-1.5 w-1.5 rounded-full" :class="store.roomStatus(r.id) === 'kosong' ? 'bg-emerald-500' : 'bg-brand-400'" />
+            {{ store.roomStatus(r.id) === 'kosong' ? 'Kosong' : 'Terisi' }}
           </span>
         </div>
 
-        <p class="mt-3 text-xl font-bold text-indigo-600">
-          {{ rupiah(room.dailyRate) }}<span class="text-sm font-normal text-slate-400"> / hari</span>
-        </p>
-
-        <div class="mt-3 flex flex-wrap gap-1.5">
-          <span v-for="f in room.facilities" :key="f" class="rounded-md bg-slate-50 px-2 py-0.5 text-xs text-slate-500">{{ f }}</span>
+        <div class="mt-3 flex items-end justify-between">
+          <div>
+            <p class="font-display text-xl font-bold text-brand-600">{{ rupiah(r.dailyRate) }}<span class="text-xs font-normal text-brand-300">/hari</span></p>
+            <p class="text-xs text-brand-400">{{ rupiah(r.monthlyRate) }}/bln</p>
+          </div>
+          <span class="chip bg-gold-300/25 text-gold-600">{{ r.type }}</span>
         </div>
 
-        <div class="mt-4 flex gap-2 border-t border-slate-100 pt-3">
-          <button class="flex-1 rounded-lg bg-slate-50 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100" @click="openEdit(room)">Edit</button>
-          <button class="rounded-lg px-3 py-1.5 text-sm font-medium text-rose-500 hover:bg-rose-50" @click="del(room)">Hapus</button>
+        <div class="mt-3 flex flex-wrap gap-1.5">
+          <span v-for="f in r.facilities" :key="f" class="rounded-md bg-brand-50 px-2 py-0.5 text-[11px] text-brand-500">{{ f }}</span>
+        </div>
+
+        <div class="mt-4 flex gap-2 border-t border-brand-700/5 pt-3">
+          <button class="btn-outline flex-1 py-2" @click="openEdit(r)"><Icon name="edit" :size="15" /> Edit</button>
+          <button class="btn px-3 py-2 text-rose-500 hover:bg-rose-50" @click="del(r)"><Icon name="trash" :size="15" /></button>
         </div>
       </div>
     </div>
 
     <ModalDialog :open="open" :title="editId ? 'Edit Kamar' : 'Tambah Kamar'" @close="open = false">
       <form class="space-y-4" @submit.prevent="save">
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-600">Nomor kamar</label>
-          <input v-model="form.number" type="text" placeholder="mis. 103" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none" />
+        <div><label class="label">Properti</label><select v-model="form.propertyId" class="input"><option v-for="p in store.properties" :key="p.id" :value="p.id">{{ p.name }}</option></select></div>
+        <div class="grid grid-cols-3 gap-3">
+          <div><label class="label">Nomor</label><input v-model="form.number" class="input" placeholder="101" /></div>
+          <div><label class="label">Lantai</label><input v-model.number="form.floor" type="number" min="1" class="input" /></div>
+          <div><label class="label">Tipe</label><select v-model="form.type" class="input"><option>Standard</option><option>Superior</option><option>Deluxe</option><option>Suite</option></select></div>
         </div>
         <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-600">Tipe</label>
-            <select v-model="form.type" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
-              <option>Standard</option>
-              <option>AC</option>
-              <option>Deluxe</option>
-            </select>
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-600">Tarif / hari</label>
-            <input v-model.number="form.dailyRate" type="number" min="0" step="10000" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none" />
-          </div>
+          <div><label class="label">Tarif harian</label><input v-model.number="form.dailyRate" type="number" step="10000" class="input" /></div>
+          <div><label class="label">Tarif bulanan</label><input v-model.number="form.monthlyRate" type="number" step="100000" class="input" /></div>
         </div>
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-600">Fasilitas <span class="text-slate-400">(pisah dengan koma)</span></label>
-          <input v-model="form.facilities" type="text" placeholder="AC, WiFi, Kamar mandi dalam" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none" />
-        </div>
-        <div class="flex justify-end gap-2 pt-2">
-          <button type="button" class="rounded-xl px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100" @click="open = false">Batal</button>
-          <button type="submit" class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Simpan</button>
-        </div>
+        <div><label class="label">Fasilitas <span class="text-brand-300">(pisah koma)</span></label><input v-model="form.facilities" class="input" placeholder="AC, WiFi, KM dalam" /></div>
+        <div class="flex justify-end gap-2 pt-2"><button type="button" class="btn-ghost" @click="open = false">Batal</button><button type="submit" class="btn-primary">Simpan</button></div>
       </form>
     </ModalDialog>
   </div>
