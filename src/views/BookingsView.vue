@@ -37,7 +37,7 @@ function save() {
 function doCheckout(b) {
   if (confirm(`Check-out ${store.customerById(b.customerId)?.name}?`)) store.checkout(b.id)
 }
-const sourceTone = { 'Walk-in': 'bg-brand-50 text-brand-500', WhatsApp: 'bg-emerald-50 text-emerald-600', OTA: 'bg-gold-300/25 text-gold-600', Referral: 'bg-slate-100 text-slate-500' }
+const sourceTone = { 'Walk-in': 'bg-brand-50 text-brand-500', WhatsApp: 'bg-emerald-50 text-emerald-600', OTA: 'bg-gold-300/25 text-gold-600', Referral: 'bg-slate-100 text-slate-500', Website: 'bg-brand-600 text-white' }
 </script>
 
 <template>

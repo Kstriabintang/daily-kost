@@ -1,7 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
-  { path: '/', name: 'landing', component: () => import('../views/LandingView.vue'), meta: { title: 'Manajemen Kos Harian Premium se-Pontianak' } },
+  {
+    path: '/',
+    component: () => import('../layouts/PublicLayout.vue'),
+    children: [
+      { path: '', name: 'home', component: () => import('../views/public/HomeView.vue'), meta: { title: 'Sewa Kos Harian Premium se-Pontianak' } },
+      { path: 'cari', name: 'search', component: () => import('../views/public/SearchView.vue'), meta: { title: 'Cari Kamar Kos' } },
+      { path: 'kamar/:id', name: 'room', component: () => import('../views/public/RoomDetailView.vue'), meta: { title: 'Detail Kamar' } },
+      { path: 'pesan/:id', name: 'book', component: () => import('../views/public/GuestBookingView.vue'), meta: { title: 'Pesan Kamar' } },
+      { path: 'booking/sukses', name: 'success', component: () => import('../views/public/SuccessView.vue'), meta: { title: 'Pemesanan Berhasil' } },
+    ],
+  },
   {
     path: '/app',
     component: () => import('../layouts/DashboardLayout.vue'),
@@ -24,11 +34,17 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
-  scrollBehavior: () => ({ top: 0 }),
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition
+    return { top: 0 }
+  },
 })
 
 router.afterEach((to) => {
-  document.title = `${to.meta.title ?? 'Daily Kost'} · Daily Kost Pontianak`
+  const isPublic = !to.path.startsWith('/app')
+  document.title = isPublic
+    ? `${to.meta.title ?? 'Daily Kost'} · Daily Kost Pontianak`
+    : `${to.meta.title ?? 'Dashboard'} · Daily Kost Admin`
 })
 
 export default router

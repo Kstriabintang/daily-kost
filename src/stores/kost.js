@@ -67,10 +67,11 @@ function seed() {
       const perFloor = randInt(3, 5)
       for (let n = 1; n <= perFloor; n++) {
         const rt = roomTypes[Math.min(roomTypes.length - 1, f - 1 + (rng() > 0.6 ? 1 : 0))]
+        const num = `${f}${String(n).padStart(2, '0')}`
         rooms.push({
-          id: uid('r'),
+          id: `r-${p.id}-${num}`,
           propertyId: p.id,
-          number: `${f}${String(n).padStart(2, '0')}`,
+          number: num,
           floor: f,
           type: rt.type,
           dailyRate: rt.daily,
@@ -423,6 +424,81 @@ export const useKostStore = defineStore('kost', () => {
   function addTemplate(data) { templates.value.push({ id: uid('t'), ...data }) }
   function removeTemplate(id) { templates.value = templates.value.filter((t) => t.id !== id) }
 
+  // ── Public booking (guest) ──
+  function rangesOverlap(aStart, aEnd, bStart, bEnd) {
+    return aStart < bEnd && bStart < aEnd
+  }
+  function isRoomAvailable(roomId, checkIn, checkOut) {
+    if (!checkIn || !checkOut) return roomStatus(roomId) === 'kosong'
+    return !bookings.value.some(
+      (b) => b.roomId === roomId && b.status !== 'checkout' && rangesOverlap(checkIn, checkOut, b.checkIn, b.checkOut)
+    )
+  }
+  function roomRating(room) {
+    const p = propertyById(room.propertyId)
+    return p ? p.rating : 4.7
+  }
+  function roomReviews(room) {
+    // deterministic pseudo review count from id
+    let h = 0
+    for (const ch of room.id) h = (h * 31 + ch.charCodeAt(0)) % 900
+    return 40 + h
+  }
+  function enrichRoom(room) {
+    const p = propertyById(room.propertyId)
+    return {
+      ...room,
+      property: p,
+      area: p?.area,
+      rating: roomRating(room),
+      reviews: roomReviews(room),
+    }
+  }
+  function searchRooms(filters = {}) {
+    const { area, type, checkIn, checkOut, maxPrice, q } = filters
+    return rooms.value
+      .filter((r) => {
+        const p = propertyById(r.propertyId)
+        if (area && p?.area !== area) return false
+        if (type && r.type !== type) return false
+        if (maxPrice && r.dailyRate > maxPrice) return false
+        if (q) {
+          const hay = `${p?.name} ${p?.area} ${r.type} ${r.number}`.toLowerCase()
+          if (!hay.includes(q.toLowerCase())) return false
+        }
+        if ((checkIn || checkOut) && !isRoomAvailable(r.id, checkIn, checkOut)) return false
+        return true
+      })
+      .map(enrichRoom)
+  }
+  const priceRange = computed(() => {
+    if (!rooms.value.length) return { min: 0, max: 0 }
+    const rates = rooms.value.map((r) => r.dailyRate)
+    return { min: Math.min(...rates), max: Math.max(...rates) }
+  })
+
+  function createGuestBooking({ roomId, name, phone, email, checkIn, checkOut, guests }) {
+    if (!isRoomAvailable(roomId, checkIn, checkOut)) return { ok: false, msg: 'Maaf, kamar sudah tidak tersedia untuk tanggal tersebut.' }
+    // reuse customer by phone or create new
+    let cust = customers.value.find((c) => c.phone === phone && phone)
+    if (!cust) cust = addCustomer({ name, phone, email: email || '', idNumber: '' })
+    else Object.assign(cust, { name, email: email || cust.email })
+    const b = {
+      id: uid('b'),
+      roomId,
+      customerId: cust.id,
+      checkIn,
+      checkOut,
+      guests: guests || 1,
+      status: 'active',
+      paid: false,
+      source: 'Website',
+    }
+    bookings.value.push(b)
+    const code = 'DK' + b.id.slice(-6).toUpperCase()
+    return { ok: true, booking: b, code, customer: cust }
+  }
+
   function resetData() {
     const s = seed()
     properties.value = s.properties; rooms.value = s.rooms; customers.value = s.customers
@@ -454,6 +530,8 @@ export const useKostStore = defineStore('kost', () => {
     addBooking, checkout, togglePaid, removeBooking,
     recordPayment, addExpense, removeExpense,
     sendBroadcast, addTemplate, removeTemplate,
+    // public booking
+    isRoomAvailable, searchRooms, roomRating, roomReviews, enrichRoom, priceRange, createGuestBooking,
     resetData,
   }
 })
