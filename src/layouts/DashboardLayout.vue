@@ -49,10 +49,11 @@ const today = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'nu
 
 <template>
   <div class="min-h-screen lg:flex">
+    <div class="living-bg soft" aria-hidden="true"><span class="blob b1" /><span class="blob b2" /><span class="blob b3" /></div>
     <div v-if="sidebarOpen" class="fixed inset-0 z-40 bg-brand-950/40 lg:hidden" @click="sidebarOpen = false" />
 
     <!-- Sidebar -->
-    <aside class="fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-brand-700 text-brand-100 transition-transform lg:static lg:translate-x-0" :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
+    <aside class="fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-brand-700 text-brand-100 transition-transform lg:relative lg:z-10 lg:translate-x-0" :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
       <RouterLink to="/" class="flex items-center gap-3 px-6 py-6">
         <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-600 text-lg shadow-lg ring-1 ring-white/10"><Icon name="home" :size="22" class="text-white" /></span>
         <div>
@@ -109,7 +110,7 @@ const today = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'nu
     </aside>
 
     <!-- Main -->
-    <div class="flex min-w-0 flex-1 flex-col">
+    <div class="relative z-10 flex min-w-0 flex-1 flex-col">
       <header class="sticky top-0 z-30 flex items-center gap-3 border-b border-brand-700/5 bg-cream-50/80 px-4 py-3 backdrop-blur lg:px-8">
         <button class="rounded-lg p-2 text-brand-600 hover:bg-brand-50 lg:hidden" @click="sidebarOpen = true"><Icon name="menu" :size="20" /></button>
         <div class="relative hidden max-w-md flex-1 sm:block">

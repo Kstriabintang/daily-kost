@@ -86,9 +86,11 @@ function goBook() {
 
           <div class="my-6 h-px bg-brand-700/5" />
           <h2 class="font-display text-xl font-bold text-ink">Tentang Kamar Ini</h2>
-          <p class="mt-3 leading-relaxed text-accent">
-            Kamar transit {{ room.type }} di {{ room.property?.name }}, {{ room.area }}. Cocok untuk singgah sementara — istirahat, transit perjalanan, atau butuh tempat nyaman beberapa jam. Sudah termasuk <b>AC, Smart TV + Netflix, WiFi cepat, dan kamar mandi dalam</b>. Bersih, wangi, dan siap huni 24 jam. Sewa fleksibel per 3 jam, 6 jam, 12 jam, atau harian — semua campur, tanpa ribet, tanpa login.
+          <p v-if="room.description" class="mt-3 leading-relaxed whitespace-pre-line text-muted">{{ room.description }}</p>
+          <p v-else class="mt-3 leading-relaxed text-muted">
+            Kamar transit {{ room.type }} di {{ room.property?.name }}, {{ room.area }}. Cocok untuk singgah sementara — istirahat, transit perjalanan, atau butuh tempat nyaman beberapa jam. Sudah termasuk <b class="text-strong">AC, Smart TV + Netflix, WiFi cepat, dan kamar mandi dalam</b>. Bersih, wangi, dan siap huni 24 jam. Sewa fleksibel per 3 jam, 6 jam, 12 jam, atau harian — semua campur, tanpa ribet, tanpa login.
           </p>
+          <p class="mt-2 text-sm text-soft">Kapasitas hingga {{ room.capacity || 2 }} tamu · kelas {{ room.type }}</p>
           <div class="mt-4 flex flex-wrap gap-3">
             <span class="chip bg-emerald-50 text-emerald-600"><Icon name="checkCircle" :size="14" /> Bebas Netflix & TV</span>
             <span class="chip bg-emerald-50 text-emerald-600"><Icon name="checkCircle" :size="14" /> Kamar mandi dalam</span>

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { dbAll, dbUpsert, dbBulk, dbDelete, dbDeleteBy, dbClear } from '../lib/supabase'
 
-const STORAGE_KEY = 'daily-kost-v4'
+const STORAGE_KEY = 'daily-kost-v5'
 const TABLES = ['properties', 'rooms', 'customers', 'bookings', 'payments', 'expenses', 'broadcasts', 'templates']
 
 // ── Utils ───────────────────────────────────────────────────────────────────
@@ -92,6 +92,7 @@ function seed() {
       for (let n = 1; n <= perFloor; n++) {
         const cl = classes[Math.min(classes.length - 1, f - 1 + (rng() > 0.6 ? 1 : 0))]
         const num = `${f}${p2(n)}`
+        const cap = cl.type === 'Executive' ? 3 : 2
         rooms.push({
           id: `r-${p.id}-${num}`,
           propertyId: p.id,
@@ -101,6 +102,8 @@ function seed() {
           rates: { ...cl.rates },
           dailyRate: cl.rates['1h'], // harga headline (1 hari) — kompatibilitas
           facilities: [...cl.fac],
+          capacity: cap,
+          description: `Kamar ${cl.type} yang nyaman di ${p.name}, ${p.area}. Cocok untuk singgah, transit perjalanan, atau istirahat sejenak. Dilengkapi ${cl.fac.slice(0, 4).join(', ')}. Bersih, wangi, dan siap huni 24 jam.`,
         })
       }
     }
@@ -391,9 +394,10 @@ export const useKostStore = defineStore('kost', () => {
   // ── Actions: Room ──
   function addRoom(data) {
     const rates = data.rates || {}
-    const r = { id: uid('r'), facilities: [], rates, dailyRate: rates['1h'] ?? data.dailyRate ?? 0, ...data }
+    const r = { id: uid('r'), facilities: [], capacity: 2, description: '', rates, dailyRate: rates['1h'] ?? data.dailyRate ?? 0, ...data }
     r.rates = rates; r.dailyRate = rates['1h'] ?? r.dailyRate
     rooms.value.push(r); dbUpsert('rooms', plain(r))
+    return r
   }
   function updateRoom(id, data) {
     const r = roomById(id); if (!r) return
