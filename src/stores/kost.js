@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
+import { dbAll, dbUpsert, dbBulk, dbDelete, dbDeleteBy, dbClear } from '../lib/supabase'
+
+const TABLES = ['properties', 'rooms', 'customers', 'bookings', 'payments', 'expenses', 'broadcasts', 'templates']
 
 const STORAGE_KEY = 'daily-kost-v2'
 
@@ -234,7 +237,9 @@ export const useKostStore = defineStore('kost', () => {
 
   // Active property filter (null = semua)
   const activePropertyId = ref(null)
+  const ready = ref(false)
 
+  // Offline cache (localStorage) untuk paint instan + fallback
   watch(
     [properties, rooms, customers, bookings, payments, expenses, broadcasts, templates, settings],
     () => {
@@ -249,6 +254,47 @@ export const useKostStore = defineStore('kost', () => {
     },
     { deep: true }
   )
+
+  // ── Supabase: muat data (seed kalau DB kosong) ──
+  async function init() {
+    try {
+      const props = await dbAll('properties')
+      if (!props.length) {
+        const s = seed()
+        properties.value = s.properties; rooms.value = s.rooms; customers.value = s.customers
+        bookings.value = s.bookings; payments.value = s.payments; expenses.value = s.expenses
+        broadcasts.value = s.broadcasts; templates.value = s.templates
+        settings.value = { ...defaultSettings }
+        await Promise.all([
+          dbBulk('properties', s.properties), dbBulk('rooms', s.rooms), dbBulk('customers', s.customers),
+          dbBulk('bookings', s.bookings), dbBulk('payments', s.payments), dbBulk('expenses', s.expenses),
+          dbBulk('broadcasts', s.broadcasts), dbBulk('templates', s.templates),
+        ])
+        await dbUpsert('app_settings', { id: 1, data: { ...settings.value } })
+      } else {
+        const [rms, cus, bk, pay, exp, bc, tpl, st] = await Promise.all([
+          dbAll('rooms'), dbAll('customers'), dbAll('bookings'), dbAll('payments'),
+          dbAll('expenses'), dbAll('broadcasts'), dbAll('templates'), dbAll('app_settings'),
+        ])
+        properties.value = props
+        rooms.value = rms
+        customers.value = cus
+        bookings.value = bk
+        payments.value = pay
+        expenses.value = exp
+        broadcasts.value = bc.sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+        templates.value = tpl
+        if (st.length && st[0].data) settings.value = { ...defaultSettings, ...st[0].data }
+      }
+    } catch (e) {
+      console.warn('[supabase] init gagal — pakai data lokal', e)
+    } finally {
+      ready.value = true
+    }
+  }
+
+  // Sinkron pengaturan
+  watch(settings, () => { if (ready.value) dbUpsert('app_settings', { id: 1, data: { ...settings.value } }) }, { deep: true })
 
   // ── Lookups ──
   const propertyById = (id) => properties.value.find((p) => p.id === id) ?? null
@@ -355,21 +401,34 @@ export const useKostStore = defineStore('kost', () => {
     [...scopedActiveBookings.value].sort((a, b) => a.checkOut.localeCompare(b.checkOut))
   )
 
+  // plain snapshot (lepas dari proxy Vue) untuk dikirim ke Supabase
+  const plain = (o) => JSON.parse(JSON.stringify(o))
+
   // ── Actions: Property ──
-  function addProperty(data) { properties.value.push({ id: uid('p'), hue: 158, rating: 4.5, ...data }) }
-  function updateProperty(id, data) { const p = propertyById(id); if (p) Object.assign(p, data) }
+  function addProperty(data) {
+    const p = { id: uid('p'), hue: 158, rating: 4.5, ...data }
+    properties.value.push(p)
+    dbUpsert('properties', plain(p))
+  }
+  function updateProperty(id, data) { const p = propertyById(id); if (p) { Object.assign(p, data); dbUpsert('properties', plain(p)) } }
   function removeProperty(id) {
     if (rooms.value.some((r) => r.propertyId === id)) return { ok: false, msg: 'Masih ada kamar di properti ini.' }
     properties.value = properties.value.filter((p) => p.id !== id)
+    dbDelete('properties', id)
     return { ok: true }
   }
 
   // ── Actions: Room ──
-  function addRoom(data) { rooms.value.push({ id: uid('r'), facilities: [], ...data }) }
-  function updateRoom(id, data) { const r = roomById(id); if (r) Object.assign(r, data) }
+  function addRoom(data) {
+    const r = { id: uid('r'), facilities: [], ...data }
+    rooms.value.push(r)
+    dbUpsert('rooms', plain(r))
+  }
+  function updateRoom(id, data) { const r = roomById(id); if (r) { Object.assign(r, data); dbUpsert('rooms', plain(r)) } }
   function removeRoom(id) {
     if (bookingForRoom(id)) return { ok: false, msg: 'Kamar sedang terisi.' }
     rooms.value = rooms.value.filter((r) => r.id !== id)
+    dbDelete('rooms', id)
     return { ok: true }
   }
 
@@ -377,16 +436,18 @@ export const useKostStore = defineStore('kost', () => {
   function addCustomer(data) {
     const c = { id: uid('c'), joinedAt: todayStr(), ...data }
     customers.value.push(c)
+    dbUpsert('customers', plain(c))
     return c
   }
-  function updateCustomer(id, data) { const c = customerById(id); if (c) Object.assign(c, data) }
-  function removeCustomer(id) { customers.value = customers.value.filter((c) => c.id !== id) }
+  function updateCustomer(id, data) { const c = customerById(id); if (c) { Object.assign(c, data); dbUpsert('customers', plain(c)) } }
+  function removeCustomer(id) { customers.value = customers.value.filter((c) => c.id !== id); dbDelete('customers', id) }
 
   // ── Actions: Booking ──
   function addBooking(data) {
     if (bookingForRoom(data.roomId)) return { ok: false, msg: 'Kamar sudah terisi.' }
     const b = { id: uid('b'), status: 'active', paid: false, source: 'Walk-in', ...data }
     bookings.value.push(b)
+    dbUpsert('bookings', plain(b))
     if (b.paid) recordPayment(b.id, bookingTotal(b), 'Transfer')
     return { ok: true, booking: b }
   }
@@ -395,36 +456,51 @@ export const useKostStore = defineStore('kost', () => {
     if (!b) return
     b.status = 'checkout'
     if (!b.paid) { b.paid = true; recordPayment(b.id, bookingTotal(b), 'Tunai') }
+    dbUpsert('bookings', plain(b))
   }
   function togglePaid(id) {
     const b = bookings.value.find((x) => x.id === id)
     if (!b) return
     b.paid = !b.paid
+    dbUpsert('bookings', plain(b))
     if (b.paid) recordPayment(b.id, bookingTotal(b), 'Transfer')
-    else payments.value = payments.value.filter((p) => p.bookingId !== id)
+    else { payments.value = payments.value.filter((p) => p.bookingId !== id); dbDeleteBy('payments', 'bookingId', id) }
   }
   function removeBooking(id) {
     bookings.value = bookings.value.filter((b) => b.id !== id)
     payments.value = payments.value.filter((p) => p.bookingId !== id)
+    dbDelete('bookings', id)
+    dbDeleteBy('payments', 'bookingId', id)
   }
 
   // ── Actions: Payment ──
   function recordPayment(bookingId, amount, method = 'Transfer') {
-    payments.value.push({ id: uid('pay'), bookingId, amount, method, date: todayStr(), status: 'success' })
+    const p = { id: uid('pay'), bookingId, amount, method, date: todayStr(), status: 'success' }
+    payments.value.push(p)
+    dbUpsert('payments', plain(p))
   }
 
   // ── Actions: Expense ──
-  function addExpense(data) { expenses.value.push({ id: uid('e'), date: todayStr(), note: '', ...data }) }
-  function removeExpense(id) { expenses.value = expenses.value.filter((e) => e.id !== id) }
+  function addExpense(data) {
+    const e = { id: uid('e'), date: todayStr(), note: '', ...data }
+    expenses.value.push(e)
+    dbUpsert('expenses', plain(e))
+  }
+  function removeExpense(id) { expenses.value = expenses.value.filter((e) => e.id !== id); dbDelete('expenses', id) }
 
   // ── Actions: WhatsApp ──
   function sendBroadcast(data) {
     const bc = { id: uid('bc'), date: todayStr(), status: 'terkirim', recipients: data.recipients ?? customers.value.length, ...data }
     broadcasts.value.unshift(bc)
+    dbUpsert('broadcasts', plain(bc))
     return bc
   }
-  function addTemplate(data) { templates.value.push({ id: uid('t'), ...data }) }
-  function removeTemplate(id) { templates.value = templates.value.filter((t) => t.id !== id) }
+  function addTemplate(data) {
+    const t = { id: uid('t'), ...data }
+    templates.value.push(t)
+    dbUpsert('templates', plain(t))
+  }
+  function removeTemplate(id) { templates.value = templates.value.filter((t) => t.id !== id); dbDelete('templates', id) }
 
   // ── Public booking (guest) ──
   function rangesOverlap(aStart, aEnd, bStart, bEnd) {
@@ -497,23 +573,32 @@ export const useKostStore = defineStore('kost', () => {
       source: 'Website',
     }
     bookings.value.push(b)
+    dbUpsert('bookings', plain(b))
     const code = 'DK' + b.id.slice(-6).toUpperCase()
     return { ok: true, booking: b, code, customer: cust }
   }
 
-  function resetData() {
+  async function resetData() {
     const s = seed()
     properties.value = s.properties; rooms.value = s.rooms; customers.value = s.customers
     bookings.value = s.bookings; payments.value = s.payments; expenses.value = s.expenses
     broadcasts.value = s.broadcasts; templates.value = s.templates
     settings.value = { ...defaultSettings }
     activePropertyId.value = null
+    // ganti seluruh isi DB
+    await Promise.all(TABLES.map((t) => dbClear(t)))
+    await Promise.all([
+      dbBulk('properties', s.properties), dbBulk('rooms', s.rooms), dbBulk('customers', s.customers),
+      dbBulk('bookings', s.bookings), dbBulk('payments', s.payments), dbBulk('expenses', s.expenses),
+      dbBulk('broadcasts', s.broadcasts), dbBulk('templates', s.templates),
+    ])
+    dbUpsert('app_settings', { id: 1, data: { ...settings.value } })
   }
 
   return {
     // state
     properties, rooms, customers, bookings, payments, expenses, broadcasts, templates, settings,
-    activePropertyId,
+    activePropertyId, ready, init,
     // lookups
     propertyById, roomById, customerById, propertyOfRoom,
     // scoped
