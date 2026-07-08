@@ -74,7 +74,7 @@ function stats(id) {
           </div>
 
           <div class="mt-4 flex gap-2 border-t border-brand-700/5 pt-3">
-            <button class="btn-outline flex-1 py-2" @click="store.activePropertyId = p.id; $router.push('/kamar')"><Icon name="eye" :size="15" /> Kelola</button>
+            <button class="btn-outline flex-1 py-2" @click="store.activePropertyId = p.id; $router.push('/app/kamar')"><Icon name="eye" :size="15" /> Kelola</button>
             <button class="btn-ghost px-3 py-2" @click="openEdit(p)"><Icon name="edit" :size="15" /></button>
             <button class="btn px-3 py-2 text-rose-500 hover:bg-rose-50" @click="del(p)"><Icon name="trash" :size="15" /></button>
           </div>

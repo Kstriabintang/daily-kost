@@ -34,7 +34,7 @@ const recent = computed(() =>
     <PageHeader title="Dashboard" :subtitle="`Ringkasan operasional ${store.activePropertyId ? store.propertyById(store.activePropertyId).name : 'seluruh cabang Pontianak'} · hari ini`">
       <template #actions>
         <button class="btn-outline"><Icon name="download" :size="16" /> Ekspor</button>
-        <RouterLink to="/laporan" class="btn-dark"><Icon name="chart" :size="16" /> Laporan</RouterLink>
+        <RouterLink to="/app/laporan" class="btn-dark"><Icon name="chart" :size="16" /> Laporan</RouterLink>
       </template>
     </PageHeader>
 
@@ -79,7 +79,7 @@ const recent = computed(() =>
       <div class="card p-5">
         <div class="mb-3 flex items-center justify-between">
           <h2 class="font-display text-lg font-bold text-brand-800">Check-out Terdekat</h2>
-          <RouterLink to="/booking" class="text-xs font-semibold text-brand-600 hover:underline">Semua</RouterLink>
+          <RouterLink to="/app/booking" class="text-xs font-semibold text-brand-600 hover:underline">Semua</RouterLink>
         </div>
         <ul class="space-y-1">
           <li v-for="b in checkouts" :key="b.id" class="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-brand-50">

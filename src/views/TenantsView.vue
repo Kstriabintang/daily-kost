@@ -26,7 +26,7 @@ const tenants = computed(() => {
 
 function waMessage(c) {
   store.activePropertyId = store.activePropertyId
-  router.push({ path: '/whatsapp', query: { to: c.id } })
+  router.push({ path: '/app/whatsapp', query: { to: c.id } })
 }
 </script>
 

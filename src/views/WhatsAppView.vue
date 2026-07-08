@@ -88,7 +88,7 @@ function saveTpl() {
         <p class="font-semibold">Hubungkan WhatsApp Business API</p>
         <p class="text-sm text-brand-200">Integrasikan Meta Cloud API untuk mengirim broadcast & pesan otomatis ke penghuni. Konfigurasi di Pengaturan.</p>
       </div>
-      <RouterLink to="/pengaturan" class="btn-gold whitespace-nowrap">Hubungkan Sekarang</RouterLink>
+      <RouterLink to="/app/pengaturan" class="btn-gold whitespace-nowrap">Hubungkan Sekarang</RouterLink>
     </div>
 
     <div class="grid gap-4 lg:grid-cols-3">
