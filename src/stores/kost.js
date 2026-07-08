@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { dbAll, dbUpsert, dbBulk, dbDelete, dbDeleteBy, dbClear } from '../lib/supabase'
 
-const STORAGE_KEY = 'daily-kost-v3'
+const STORAGE_KEY = 'daily-kost-v4'
 const TABLES = ['properties', 'rooms', 'customers', 'bookings', 'payments', 'expenses', 'broadcasts', 'templates']
 
 // ── Utils ───────────────────────────────────────────────────────────────────
@@ -28,6 +28,7 @@ export const DURATIONS = [
   { key: '6j', label: '6 Jam', short: '6 jam', hours: 6 },
   { key: '12j', label: '12 Jam', short: '12 jam', hours: 12 },
   { key: '1h', label: '1 Hari', short: '24 jam', hours: 24 },
+  { key: '3h', label: '3 Hari', short: '3 hari', hours: 72 },
   { key: '1mg', label: '1 Minggu', short: '7 hari', hours: 168 },
 ]
 export const durationByKey = (k) => DURATIONS.find((d) => d.key === k) || DURATIONS[3]
@@ -78,9 +79,9 @@ function seed() {
 
   const baseFac = ['AC', 'Smart TV', 'Netflix', 'WiFi cepat', 'KM dalam', 'Air panas']
   const classes = [
-    { type: 'Standard', rates: { '3j': 40000, '6j': 60000, '12j': 90000, '1h': 130000, '1mg': 750000 }, fac: [...baseFac] },
-    { type: 'Deluxe', rates: { '3j': 55000, '6j': 80000, '12j': 120000, '1h': 175000, '1mg': 1000000 }, fac: [...baseFac, 'Kulkas mini', 'Meja kerja'] },
-    { type: 'Executive', rates: { '3j': 75000, '6j': 110000, '12j': 160000, '1h': 230000, '1mg': 1400000 }, fac: [...baseFac, 'Kulkas mini', 'Sofa', 'Bathtub', 'City view'] },
+    { type: 'Standard', rates: { '3j': 40000, '6j': 60000, '12j': 90000, '1h': 130000, '3h': 330000, '1mg': 700000 }, fac: [...baseFac] },
+    { type: 'Deluxe', rates: { '3j': 55000, '6j': 80000, '12j': 120000, '1h': 175000, '3h': 450000, '1mg': 950000 }, fac: [...baseFac, 'Kulkas mini', 'Meja kerja'] },
+    { type: 'Executive', rates: { '3j': 75000, '6j': 110000, '12j': 160000, '1h': 230000, '3h': 600000, '1mg': 1300000 }, fac: [...baseFac, 'Kulkas mini', 'Sofa', 'Bathtub', 'City view'] },
   ]
 
   const rooms = []

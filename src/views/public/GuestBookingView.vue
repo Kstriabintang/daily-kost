@@ -66,8 +66,8 @@ function confirm() {
               <h2 class="font-display text-xl font-bold text-brand-800">Detail Sewa</h2>
               <div class="mt-4">
                 <p class="mb-2 text-sm font-medium text-brand-600">Durasi</p>
-                <div class="grid grid-cols-3 gap-2 sm:grid-cols-5">
-                  <button v-for="d in DURATIONS" :key="d.key" type="button" @click="data.durasi = d.key" class="rounded-xl border-2 px-2 py-2 text-center transition" :class="data.durasi === d.key ? 'border-brand-600 bg-brand-50/60' : 'border-brand-100 hover:border-brand-200'">
+                <div class="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                  <button v-for="d in DURATIONS" :key="d.key" type="button" @click="data.durasi = d.key" class="rounded-xl border-2 px-1.5 py-2 text-center transition" :class="data.durasi === d.key ? 'border-brand-600 bg-brand-50/60' : 'border-brand-100 hover:border-brand-200'">
                     <span class="block text-xs font-semibold text-brand-800">{{ d.label }}</span>
                     <span class="block text-[11px] font-bold text-brand-600">{{ rupiah(room.rates?.[d.key] ?? room.dailyRate) }}</span>
                   </button>

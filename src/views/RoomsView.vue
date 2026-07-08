@@ -11,7 +11,7 @@ const filter = ref('semua')
 const open = ref(false)
 const editId = ref(null)
 
-const emptyRates = () => ({ '3j': 40000, '6j': 60000, '12j': 90000, '1h': 130000, '1mg': 750000 })
+const emptyRates = () => ({ '3j': 40000, '6j': 60000, '12j': 90000, '1h': 130000, '3h': 330000, '1mg': 700000 })
 const form = reactive({ propertyId: '', number: '', floor: 1, type: 'Standard', rates: emptyRates(), facilities: '' })
 
 const rooms = computed(() => {

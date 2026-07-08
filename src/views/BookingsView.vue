@@ -115,8 +115,8 @@ const sourceTone = { 'Walk-in': 'bg-brand-50 text-brand-500', WhatsApp: 'bg-emer
           <div><label class="label">No. HP</label><input v-model="form.newPhone" class="input" placeholder="0812..." /></div>
         </div>
         <div><label class="label">Durasi</label>
-          <div class="grid grid-cols-5 gap-1.5">
-            <button v-for="d in DURATIONS" :key="d.key" type="button" @click="form.durasi = d.key" class="rounded-lg border-2 py-2 text-xs font-semibold transition" :class="form.durasi === d.key ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-brand-100 text-brand-400'">{{ d.label }}</button>
+          <div class="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
+            <button v-for="d in DURATIONS" :key="d.key" type="button" @click="form.durasi = d.key" class="rounded-lg border-2 px-1 py-2 text-xs font-semibold transition" :class="form.durasi === d.key ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-brand-100 text-brand-400'">{{ d.label }}</button>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
