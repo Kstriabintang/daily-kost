@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://dailykost.id/sitemap.xml
+Sitemap: https://kostpontianak.web.id/sitemap.xml
