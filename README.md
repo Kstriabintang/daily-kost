@@ -180,7 +180,7 @@ src/
 
 [![GitHub](https://img.shields.io/badge/GitHub-Kstriabintang-181717?style=flat-square&logo=github)](https://github.com/Kstriabintang)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Ksatria_Bintang_Samudra-0A66C2?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/ksatria-bintang-samudra-265952313)
-[![Website](https://img.shields.io/badge/Website-ksatriabintangsamudra.my.id-00704a?style=flat-square&logo=googlechrome&logoColor=white)](https://ksatriabintangsamudra.my.id)
+[![Website](https://img.shields.io/badge/Website-ksatriabintangsamudra.com-00704a?style=flat-square&logo=googlechrome&logoColor=white)](https://ksatriabintangsamudra.com)
 
 <div align="center">
 <br />
